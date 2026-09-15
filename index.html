@@ -20,6 +20,7 @@ const ctx = canvas.getContext('2d');
 // —— 逻辑分辨率 ——（宽固定 960，高随屏幕比例自适应，实现无黑边、不变形的全屏）
 const VIEW_W = 960;
 let VIEW_H = 540;
+const GAME_VERSION = '1.0';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -6109,6 +6110,11 @@ function drawTitle() {
   // 更衣室（左下角）
   drawButton(18, 452, 150, 42, '👕 ' + t('更衣室'), '#7a3fd0');
   drawButton(176, 452, 130, 42, '🎵 ' + t('音乐盒'), '#2f7fb8');
+  // 版本号（右下角）
+  ctx.font = 'bold 13px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.45)';
+  ctx.textAlign = 'right';
+  ctx.fillText('v' + GAME_VERSION, VIEW_W - 16, VIEW_H - 12);
+  ctx.textAlign = 'center';
   // 编辑器 / 我的关卡入口
   for (const b of titleEditorButtons()) drawButton(b.x, b.y, b.w, b.h, t(b.label), b.color);
 
@@ -7467,8 +7473,8 @@ function drawMusicBox() {
     }
     if (musicBoxScroll + page < musicBoxSongs.length) drawButton(VIEW_W / 2 - 40, 240 + page * 40, 80, 30, '▼', '#4a4a5a');
   }
-  ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.5)';
-  ctx.fillText(t('音乐由 Hamsger 制作'), VIEW_W / 2, VIEW_H - 24);
+  ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
+  ctx.fillText(t('音乐由 Hamsger 制作') + ' · v' + GAME_VERSION, VIEW_W / 2, VIEW_H - 24);
 }
 function render() {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
