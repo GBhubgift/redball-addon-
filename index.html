@@ -7445,10 +7445,10 @@ function drawMusicBox() {
   ctx.textAlign = 'center';
   ctx.font = '900 40px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
   ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 6;
-  ctx.strokeText('🎵 ' + t('音乐盒子'), VIEW_W / 2, 90);
-  ctx.fillText('🎵 ' + t('音乐盒子'), VIEW_W / 2, 90);
+  ctx.strokeText('🎵 ' + t('音乐盒'), VIEW_W / 2, 90);
+  ctx.fillText('🎵 ' + t('音乐盒'), VIEW_W / 2, 90);
   drawButton(18, 16, 92, 42, t('← 返回'), 'rgba(0,0,0,.35)');
-  drawButton(VIEW_W / 2 - 130, 130, 260, 50, t('📂 选择音乐文件'), '#2f7fb8');
+  drawButton(VIEW_W / 2 - 130, 130, 260, 50, '📂 ' + t('选择音乐文件'), '#2f7fb8');
   ctx.font = '14px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.65)';
   ctx.fillText(t('从电脑选择音乐文件，点 ▶ 播放'), VIEW_W / 2, 210);
   if (musicBoxSongs.length === 0) {
