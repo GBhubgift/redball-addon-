@@ -1125,6 +1125,12 @@ const I18N_ROWS = [
   ['飞行模式 ON（方向键/WASD 上下左右飞）', 'Fly mode ON (arrow keys/WASD to fly)', 'Mode vol ACTIVÉ (flèches/WASD pour voler)', '飛行モード ON（方向キー/WASDで飛ぶ）', 'Flugmodus AN (Pfeiltasten/WASD zum Fliegen)'],
   ['飞行模式 OFF', 'Fly mode OFF', 'Mode vol DÉSACTIVÉ', '飛行モード OFF', 'Flugmodus AUS'],
   ['导出失败：请通过 http:// 访问（file:// 不行）', 'Export failed: access via http:// (file:// won\'t work)', 'Échec de l\'export : accédez via http:// (file:// ne fonctionne pas)', 'エクスポート失敗：http:// でアクセスしてください（file:// では不可）', 'Export fehlgeschlagen: bitte über http:// zugreifen (file:// funktioniert nicht)'],
+  ['← → 或 A D 移动 · ↑/空格/W 跳跃 · R 重开 · M 菜单 · U 无敌 · G 飞行', '← → or A D move · ↑/Space/W jump · R restart · M menu · U invincible · G fly', '← → ou A D se déplacer · ↑/Espace/W sauter · R recommencer · M menu · U invincible · G voler', '← → / A D 移動 · ↑/スペース/W ジャンプ · R リスタート · M メニュー · U 無敵 · G 飛行', '← → oder A D bewegen · ↑/Leertaste/W springen · R neu · M Menü · U unbesiegbar · G fliegen'],
+  ['✎编辑', '✎Edit', '✎Modifier', '✎編集', '✎Bearbeiten'],
+  ['」', '"', ' »', '」', '"'],
+  ['」继续编辑', '" · continue editing', ' » · continuer à modifier', '」· 編集を続ける', '" · weiter bearbeiten'],
+  ['已载入「', 'Loaded "', 'Chargé « ', '読み込みました：「', 'Geladen "'],
+  ['当前：自定义关卡「', 'Now: custom level "', 'Actuel : niveau personnalisé « ', '現在：カスタム关「', 'Aktuell: benutzerdefiniertes Level "'],
 ];
 const I18N = { en: {}, fr: {}, ja: {}, de: {} };
 for (const r of I18N_ROWS) { I18N.en[r[0]] = r[1]; I18N.fr[r[0]] = r[2]; I18N.ja[r[0]] = r[3]; I18N.de[r[0]] = r[4]; }
@@ -7301,7 +7307,7 @@ const SCHOOL_NAME = 'German Mills Public School';
 function loginButtons() {
   const w = 540, h = 74, x = VIEW_W / 2 - w / 2;
   return [
-    { id: 'student', x, y: 280, w, h, icon: '🎒', label: SCHOOL_NAME + ' ' + t('学生'), sub: t('解锁关卡编辑器 · 不保存'), color: '#2f9e44' },
+    { id: 'student', x, y: 280, w, h, icon: '🎒', label: SCHOOL_NAME + ' ' + t('学生'), sub: t('解锁关卡编辑器 · 不保存进度'), color: '#2f9e44' },
   ];
 }
 function drawLogin() {
