@@ -1178,12 +1178,15 @@ function loadProgress() {
 // 关卡编辑（覆盖主线/自定义关卡/改名/草稿）始终保存：学生模式只跳过「进度」存档
 function saveCustomLevels() {
   try { localStorage.setItem('rb_custom', JSON.stringify(customLevels)); } catch (e) {}
+  saveUserData();
 }
 function saveOverrides() {
   try { localStorage.setItem('rb_overrides', JSON.stringify(overrides)); } catch (e) {}
+  saveUserData();
 }
 function saveOverrideNames() {
   try { localStorage.setItem('rb_override_names', JSON.stringify(overrideNames)); } catch (e) {}
+  saveUserData();
 }
 function saveProgress() {
   if (noSave) return;
@@ -1195,6 +1198,7 @@ function saveProgress() {
     localStorage.setItem('rb_unlocked', String(maxUnlocked));
     localStorage.setItem('rb_stars', JSON.stringify(bestStars));
   } catch (e) {}
+  saveUserData();
 }
 loadProgress();
 
@@ -1209,6 +1213,49 @@ try { accounts = JSON.parse(localStorage.getItem('rb_accounts') || '{}'); } catc
 try { currentUser = localStorage.getItem('rb_current_user') || null; } catch (e) { currentUser = null; }
 function saveAccounts() { try { localStorage.setItem('rb_accounts', JSON.stringify(accounts)); } catch (e) {} }
 function saveCurrentUser() { try { if (currentUser) localStorage.setItem('rb_current_user', currentUser); else localStorage.removeItem('rb_current_user'); } catch (e) {} }
+// 每个账号一个“小库”：把语言/进度/外观/编辑/声音设置单独存到 accounts[name].data，
+// 登录后载入，退出/关闭前保存，做到“这次是中文，下次进来还是中文”。
+function saveUserData() {
+  if (!currentUser) return;
+  try {
+    if (!accounts[currentUser] || typeof accounts[currentUser] !== 'object') accounts[currentUser] = {};
+    accounts[currentUser].data = {
+      lang: LANG,
+      skin: skinIndex, hat: hatIndex, clothes: clothesIndex, glasses: glassesIndex,
+      unlocked: maxUnlocked, stars: bestStars,
+      custom: customLevels, overrides: overrides, overrideNames: overrideNames,
+      editorUnlocked: editorUnlocked, tutorialSeen: tutorialSeen,
+      musicMuted: musicMuted, sfxMuted: sfxMuted, musicVol: musicVol, sfxVol: sfxVol,
+      quality: quality, oldmusic: useOldMusic
+    };
+    saveAccounts();
+  } catch (e) {}
+}
+function loadUserData(name) {
+  try {
+    const a = accounts[name];
+    const d = (a && typeof a === 'object') ? a.data : null;
+    if (!d) return;
+    if (d.lang && LANGS.some(l => l.code === d.lang)) { LANG = d.lang; try { localStorage.setItem('rb_lang', d.lang); } catch (e) {} }
+    if (d.skin != null) skinIndex = d.skin;
+    if (d.hat != null) hatIndex = d.hat;
+    if (d.clothes != null) clothesIndex = d.clothes;
+    if (d.glasses != null) glassesIndex = d.glasses;
+    if (d.unlocked != null) maxUnlocked = d.unlocked;
+    if (d.stars) bestStars = d.stars;
+    if (d.custom) customLevels = d.custom;
+    if (d.overrides) overrides = d.overrides;
+    if (d.overrideNames) overrideNames = d.overrideNames;
+    if (d.editorUnlocked != null) editorUnlocked = d.editorUnlocked;
+    if (d.tutorialSeen != null) tutorialSeen = d.tutorialSeen;
+    if (d.musicMuted != null) musicMuted = d.musicMuted;
+    if (d.sfxMuted != null) sfxMuted = d.sfxMuted;
+    if (d.musicVol != null) musicVol = d.musicVol;
+    if (d.sfxVol != null) sfxVol = d.sfxVol;
+    if (d.quality) quality = d.quality;
+    if (d.oldmusic != null) useOldMusic = d.oldmusic;
+  } catch (e) {}
+}
 function redeemCode() {
   if (loginCode.trim() === REDEEM_CODE) { editorUnlocked = true; try { localStorage.setItem('rb_editor_unlocked', '1'); } catch (e) {} return true; }
   return false;
@@ -1218,7 +1265,7 @@ function registerAccount() {
   const u = loginUser.trim();
   if (u.length < 2) { flashMsg(t('用户名至少 2 个字符')); return; }
   if (accounts[u]) { flashMsg(t('用户名已存在')); return; }
-  accounts[u] = true; saveAccounts();
+  accounts[u] = {}; saveAccounts();
   currentUser = u; saveCurrentUser();
   const codeOk = redeemCode();
   flashMsg(codeOk ? (t('注册成功：') + u + ' · ' + t('编辑器已解锁')) : (t('注册成功：') + u));
@@ -1228,11 +1275,12 @@ function loginAccount() {
   const u = loginUser.trim();
   if (!accounts[u]) { flashMsg(t('用户名不存在')); return; }
   currentUser = u; saveCurrentUser();
+  loadUserData(u);
   const codeOk = redeemCode();
   flashMsg(codeOk ? (t('欢迎回来：') + u + ' · ' + t('编辑器已解锁')) : (t('欢迎回来：') + u));
   enterGame();
 }
-function logoutAccount() { currentUser = null; saveCurrentUser(); }
+function logoutAccount() { saveUserData(); currentUser = null; saveCurrentUser(); }
 
 // 进入前：已登录则直接进标题（保持登录，除非 logout），否则选身份登录
 state = (currentUser) ? 'TITLE' : 'LOGIN';
@@ -1491,6 +1539,9 @@ const MUSIC_OLD = {
 let useOldMusic = false;
 try { useOldMusic = localStorage.getItem('rb_oldmusic') === '1'; } catch (e) {}
 function setOldMusic(v) { useOldMusic = v; try { localStorage.setItem('rb_oldmusic', v ? '1' : '0'); } catch (e) {} }
+// 已登录账号：载入其个人“小库”，实现“这次是中文，下次进来还是中文”
+if (currentUser) loadUserData(currentUser);
+window.addEventListener('beforeunload', saveUserData);
 function getMusic(k) { return (useOldMusic && MUSIC_OLD[k]) || MUSIC[k] || MUSIC.title; }
 let musicTheme = 'title';   // title | grass | cave | forest | boss | canyon | space | story | wardrobe | editor | credits | complete | gameover
 let musicSection = 0;       // 0 = A 段, 1 = B 段（各主题的 mel2/bass2/arp2）
