@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Red Ball 4 — 红球大冒险</title>
+<title>redballaddon</title>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; background: #7ec8f7; overflow: hidden; overscroll-behavior: none; }
   #wrap { position: fixed; inset: 0; }
@@ -934,6 +934,10 @@ const I18N_ROWS = [
   ['收集 ⭐ 星星，躲开尖刺、火焰、水面和敌人', 'Collect ⭐ stars, and avoid spikes, flames, water and enemies', 'Ramassez les étoiles ⭐ et évitez les piquants, les flammes, l\'eau et les ennemis', '⭐の星を集め、トゲ・炎・水面・敵を避けよう', 'Sammle ⭐ Sterne und weiche Stacheln, Flammen, Wasser und Gegnern aus'],
   ['碰到绿色复活点 🏳 后，失败会从那里重生', 'Touch a green 🏳 checkpoint to respawn there after failing', 'Touchez un 🏳 point de contrôle vert pour y réapparaître après un échec', '緑の🏳チェックポイントに触れると、失敗時にそこから復活する', 'Berühre einen grünen 🏳 Kontrollpunkt, um dort neu zu erscheinen'],
   ['踩在敌人头顶可以消灭它，到达 🚩 旗帜即可过关！', 'Stomp an enemy\'s head to defeat it, and reach the 🚩 flag to clear the level!', 'Écrasez la tête d\'un ennemi pour le vaincre, et atteignez le 🚩 drapeau pour terminer le niveau !', '敵の頭を踏めば倒せる。🚩の旗に着けばクリア！', 'Spring einem Gegner auf den Kopf, um ihn zu besiegen, und erreiche die 🚩 Flagge, um das Level zu schaffen!'],
+  ['1 格高的小台阶会自动跳上，高墙和 Boss 要手动跳', '1-tile steps are auto-jumped; jump manually over tall walls & bosses', 'Les marches de 1 case se passent toutes seules ; sautez les murs hauts et les boss', '1マスの小段差は自動ジャンプ、高い壁やボスは手動でジャンプ', '1-Feld-Stufen werden automatisch genommen; hohe Wände & Bosse manuell springen'],
+  ['收集 ⭐ 星星，躲开尖刺、火焰、水面（进水即死）和敌人', 'Collect ⭐ stars, avoid spikes, flames, water (instant death) & enemies', 'Ramassez les ⭐, évitez piques, flammes, eau (mort instantanée) et ennemis', '⭐を集め、トゲ・炎・水面（入水即死）・敵を避けよう', 'Sammle ⭐ Sterne, weiche Stacheln, Flammen, Wasser (sofortiger Tod) & Gegnern aus'],
+  ['踩敌人头顶可消灭它；到 🚩 过关，失败从 🏳 复活', 'Stomp enemies to defeat them; reach 🚩 to win, respawn at 🏳', 'Écrasez les ennemis pour les vaincre ; atteignez 🚩 pour gagner, respawn au 🏳', '敵の頭を踏んで倒す；🚩でクリア、失敗したら🏳から復活', 'Auf Feinde springen zum Besiegen; 🚩 erreichen, Respawn am 🏳'],
+  ['R 重开 · M 菜单 · I 设置 · F 全屏 · Q 显示鼠标', 'R restart · M menu · I settings · F fullscreen · Q show cursor', 'R recommencer · M menu · I réglages · F plein écran · Q curseur', 'R リスタート · M メニュー · I 設定 · F 全画面 · Q カーソル表示', 'R neu · M Menü · I Einstellungen · F Vollbild · Q Cursor'],
   // 关卡提示（第一章）
   ['移动与跳跃：← → 滚动，空格/↑ 跳跃，收集 ⭐ 到 🚩', 'Move and jump: ← → to roll, Space/↑ to jump, collect ⭐ to reach 🚩', 'Déplacement et saut : ← → pour rouler, Espace/↑ pour sauter, ramassez ⭐ pour atteindre 🚩', '移動とジャンプ：← →で転がり、スペース/↑でジャンプ、⭐を集めて🚩へ', 'Bewegen & Springen: ← → rollen, Leertaste/↑ springen, ⭐ sammeln bis 🚩'],
   ['新机关·大炮 🚀：踩上去会被弹到高空，翻越高墙！', 'New gadget: Cannon 🚀 — step on it to launch high over walls!', 'Nouveau gadget : Canon 🚀 — montez dessus pour être projeté au-dessus des murs !', '新仕掛け・大砲🚀：乗ると高く打ち上げられ、壁を越える！', 'Neues Gadget: Kanone 🚀 — draufstellen und über Wände geschleudert werden!'],
@@ -5976,8 +5980,8 @@ function drawTitle() {
   ctx.textAlign = 'center';
   ctx.font = '900 50px system-ui, sans-serif'; ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 7; ctx.lineJoin = 'round';
-  ctx.strokeText('RED BALL', VIEW_W / 2, 74);
-  ctx.fillText('RED BALL', VIEW_W / 2, 74);
+  ctx.strokeText('redballaddon', VIEW_W / 2, 74);
+  ctx.fillText('redballaddon', VIEW_W / 2, 74);
   ctx.font = 'bold 17px system-ui, sans-serif'; ctx.fillStyle = '#17324d';
   ctx.fillText(t('滚动跳跃 · 收集星星 · 75 关冒险 · 五大篇章 · 击败魔王'), VIEW_W / 2, 104);
 
@@ -7241,8 +7245,8 @@ function drawLogin() {
   // 游戏名
   ctx.font = '900 52px system-ui, sans-serif'; ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 7; ctx.lineJoin = 'round';
-  ctx.strokeText('RED BALL', VIEW_W / 2, 108);
-  ctx.fillText('RED BALL', VIEW_W / 2, 108);
+  ctx.strokeText('redballaddon', VIEW_W / 2, 108);
+  ctx.fillText('redballaddon', VIEW_W / 2, 108);
 
   // 账号登录/注册表单
   if (loginMode !== 'none') { drawAccountForm(); return; }
