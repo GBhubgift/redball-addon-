@@ -1034,6 +1034,7 @@ const I18N_ROWS = [
   ['重置默认', 'Reset Default', 'Réinitialiser', '初期化', 'Zurücksetzen'],
   ['重置进度', 'Reset Progress', 'Réinitialiser la progression', '進捗をリセット', 'Fortschritt zurücksetzen'],
   ['全屏', 'Fullscreen', 'Plein écran', '全画面', 'Vollbild'],
+  ['使用旧版音乐', 'Use old music', 'Utiliser l\'ancienne musique', '旧バージョンの音楽を使用', 'Alte Musik verwenden'],
   ['进度已重置 · 从第 1 关重新开始', 'Progress reset · start from level 1', 'Progression réinitialisée · recommencer au niveau 1', '進捗をリセットしました · レベル1から再開', 'Fortschritt zurückgesetzt · ab Level 1 neu'],
   ['关闭', 'Close', 'Fermer', '閉じる', 'Schließen'],
   ['画质', 'Quality', 'Qualité', '画質', 'Qualität'],
@@ -1429,6 +1430,40 @@ const MUSIC = {
     arp:  [0,349,0,330,0,294,0,262, 0,294,0,330,0,349,0,0, 0,330,0,294,0,262,0,247, 0,247,0,262,0,294,0,0],
   },
 };
+// 旧版合成音乐（本次修改之前的旋律），用于「使用旧版音乐」开关；只覆盖被改过的主题，其余沿用新版
+const MUSIC_OLD = {
+  canyon: {
+    mel:  [330,0,392,0,330,0,294,0, 262,0,294,0,330,0,392,0, 440,0,392,0,330,0,294,0, 262,0,294,0,330,0,0,0],
+    bass: [110,0,0,0,131,0,0,0, 98,0,0,0,110,0,0,0, 131,0,0,0,98,0,0,0, 110,0,0,0,98,0,0,0],
+    arp:  [0,330,0,392,0,330,0,294, 0,262,0,294,0,330,0,392, 0,440,0,392,0,330,0,294, 0,262,0,330,0,392,0,0],
+  },
+  cave: {
+    mel:  [220,0,262,0,294,0,262,0, 330,0,294,0,262,0,220,0, 196,0,220,0,262,0,294,0, 262,0,220,0,196,0,175,0],
+    bass: [110,0,0,0,131,0,0,0, 98,0,0,0,110,0,0,0, 87,0,0,0,98,0,0,0, 82,0,0,0,87,0,0,0],
+    arp:  [0,262,0,294,0,262,0,294, 0,330,0,294,0,262,0,0, 0,220,0,262,0,294,0,262, 0,294,0,262,0,220,0,0],
+  },
+  space: {
+    mel:  [523,0,659,0,784,0,1047,0, 880,0,784,0,659,0,523,0, 587,0,659,0,784,0,880,0, 1047,0,880,0,784,0,0,0],
+    bass: [131,0,0,0,196,0,0,0, 165,0,0,0,131,0,0,0, 147,0,0,0,165,0,0,0, 196,0,0,0,131,0,0,0],
+    arp:  [0,784,0,1047,0,784,0,659, 0,880,0,1047,0,880,0,784, 0,659,0,784,0,880,0,1047, 0,1319,0,1047,0,880,0,0],
+  },
+  boss: {
+    mel:  [175,0,185,0,196,0,0,0, 185,0,175,0,165,0,0,0, 175,0,185,0,196,0,0,0, 220,0,196,0,185,0,175,0],
+    bass: [87,0,87,0,93,0,93,0, 87,0,87,0,82,0,82,0, 87,0,87,0,93,0,93,0, 110,0,98,0,93,0,87,0],
+    arp:  [0,175,0,185,0,196,0,196, 0,185,0,175,0,165,0,0, 0,175,0,185,0,196,0,196, 0,220,0,196,0,185,0,0],
+    mel2: [196,0,0,0,220,0,0,0, 233,0,0,0,220,0,196,0, 185,0,0,0,196,0,0,0, 233,0,220,0,196,0,185,0],
+    bass2:[98,0,98,0,110,0,110,0, 116,0,116,0,110,0,98,0, 93,0,93,0,98,0,98,0, 116,0,110,0,98,0,93,0],
+    arp2: [0,196,0,220,0,233,0,220, 0,196,0,220,0,196,0,185, 0,185,0,196,0,220,0,196, 0,233,0,220,0,196,0,0],
+  },
+  wardrobe: {
+    mel:  [659,0,587,0,523,0,587,0, 659,0,0,0,587,0,0,0, 523,0,587,0,659,0,784,0, 659,0,587,0,523,0,0,0],
+    bass: [131,0,0,0,98,0,0,0, 110,0,0,0,98,0,0,0, 131,0,0,0,98,0,0,0, 110,0,0,0,0,0,0,0],
+  },
+};
+let useOldMusic = false;
+try { useOldMusic = localStorage.getItem('rb_oldmusic') === '1'; } catch (e) {}
+function setOldMusic(v) { useOldMusic = v; try { localStorage.setItem('rb_oldmusic', v ? '1' : '0'); } catch (e) {} }
+function getMusic(k) { return (useOldMusic && MUSIC_OLD[k]) || MUSIC[k] || MUSIC.title; }
 let musicTheme = 'title';   // title | grass | cave | forest | boss | canyon | space | story | wardrobe | editor | credits | complete | gameover
 let musicSection = 0;       // 0 = A 段, 1 = B 段（各主题的 mel2/bass2/arp2）
 
@@ -1675,7 +1710,7 @@ function bossDeathSting() {
 }
 // 人物小标志音：换皮肤/介绍人物时插入 2–4 个音，给角色一点个性（不打断主循环）
 function playMotif(name) {
-  if (!AC || !musicGain) return;
+  if (!AC || !musicGain || useOldMusic) return;   // 旧版音乐没有人物标志音
   const notes = MUSIC.wardrobe.motifs && MUSIC.wardrobe.motifs[name];
   if (!notes) return;
   let t = AC.currentTime + 0.02;
@@ -1692,7 +1727,7 @@ function wardrobeOutro() {
 function scheduleMusic() {
   if (!AC || !musicOn) return;
   const themeKey = currentMusicTheme();
-  const M = MUSIC[themeKey] || MUSIC.title;
+  const M = getMusic(themeKey);
   const step = M.step || MUSIC_STEP;        // 每章不同速度：森林欢快、洞穴紧张、宇宙漂浮
   const lead = M.lead || 'square';          // 每章不同音色：方波/三角波/锯齿波/正弦波
   const leadVol = M.leadVol || 0.034;
@@ -1867,6 +1902,7 @@ function settingsLayout() {
     reset:  { x: x + 18, y: y + 360, w: 116, h: 44 },
     resetProgress: { x: x + 142, y: y + 360, w: 116, h: 44 },
     fullscreen: { x: x + 266, y: y + 360, w: 116, h: 44 },
+    oldMusic: { x: x + 46, y: y + 300, w: 308, h: 40 },
   };
 }
 function setMusicVolume(v) {
@@ -1942,6 +1978,8 @@ function drawSettings() {
   // 鼠标皮肤
   ctx.fillText(t('鼠标皮肤'), L.x + 46, L.cursorLabelY);
   for (const b of L.cursorBtns) drawButton(b.x, b.y, b.w, b.h, b.label, b.skin === cursorSkin ? '#3f8a34' : '#4a4a5a');
+  // 使用旧版音乐
+  drawButton(L.oldMusic.x, L.oldMusic.y, L.oldMusic.w, L.oldMusic.h, '🎵 ' + t('使用旧版音乐') + (useOldMusic ? ' ✓' : ''), useOldMusic ? '#3f8a34' : '#4a4a5a');
   drawButton(L.reset.x, L.reset.y, L.reset.w, L.reset.h, '↺ ' + t('重置默认'), '#c0392b');
   drawButton(L.resetProgress.x, L.resetProgress.y, L.resetProgress.w, L.resetProgress.h, '🔒 ' + t('重置进度'), '#c0392b');
   drawButton(L.fullscreen.x, L.fullscreen.y, L.fullscreen.w, L.fullscreen.h, '⛶ ' + t('全屏'), '#4a4a5a');
@@ -7575,6 +7613,7 @@ canvas.addEventListener('pointerdown', e => {
     if (x >= L.reset.x && x <= L.reset.x + L.reset.w && y >= L.reset.y && y <= L.reset.y + L.reset.h) { resetSettings(); return; }
     if (x >= L.resetProgress.x && x <= L.resetProgress.x + L.resetProgress.w && y >= L.resetProgress.y && y <= L.resetProgress.y + L.resetProgress.h) { resetProgress(); return; }
     if (x >= L.fullscreen.x && x <= L.fullscreen.x + L.fullscreen.w && y >= L.fullscreen.y && y <= L.fullscreen.y + L.fullscreen.h) { toggleFullscreen(); return; }
+    if (x >= L.oldMusic.x && x <= L.oldMusic.x + L.oldMusic.w && y >= L.oldMusic.y && y <= L.oldMusic.y + L.oldMusic.h) { setOldMusic(!useOldMusic); sfx.click(); return; }
     for (const b of L.qualityBtns) {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { setQuality(b.q); sfx.click(); return; }
     }
