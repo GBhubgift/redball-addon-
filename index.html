@@ -4894,8 +4894,8 @@ function drawCloud(x, y) {
   ctx.fill();
 }
 function drawFloatingText() {
-  // 天上的漂浮字母 "made with zayne"（标题天空署名）
-  const txt = 'made with Hamsger';
+  // 天上的漂浮字母 "made with Hamsger!"（标题天空署名）
+  const txt = 'made with Hamsger!';
   const spacing = 36;
   const totalW = (txt.length - 1) * spacing;
   const x0 = VIEW_W / 2 - totalW / 2;
@@ -6313,6 +6313,8 @@ function drawCredits() {
     y += 54;
   }
   ctx.textAlign = 'center';
+  ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
+  ctx.fillText('made with Hamsger!', VIEW_W / 2, VIEW_H / 2 + 86);
   ctx.font = 'bold 16px system-ui, sans-serif'; ctx.fillStyle = '#9fd0ff';
   ctx.fillText('🌐 Hamsger-redball-addon.com', VIEW_W / 2, VIEW_H / 2 + 112);
   drawButton(VIEW_W / 2 - 110, VIEW_H / 2 + 132, 220, 50, t('← 返回'), '#556');
