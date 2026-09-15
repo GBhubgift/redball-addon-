@@ -442,7 +442,7 @@ function drawSmileyFace(r, lookX, lookY) {
 /* ============================ 全局状态 ============================ */
 const KEYS = { left: false, right: false, up: false, down: false };
 const INPUT = { left: false, right: false, up: false, down: false };
-let state = 'LOGIN';        // LOGIN | LANGSEL | TITLE | PLAY | COMPLETE | GAMEOVER | STORY | ENDING | EDIT | CUSTOM | LOAD | WARDROBE | CREDITS
+let state = 'LOGIN';        // LOGIN | LANGSEL | TITLE | PLAY | COMPLETE | GAMEOVER | STORY | ENDING | EDIT | CUSTOM | LOAD | WARDROBE | MUSICBOX | CREDITS
 let isStudent = false;       // 小学学生模式：解锁编辑器、但不保存进度
 let noSave = false;          // 为 true 时只跳过「进度」写入（解锁/星星/外观）；关卡编辑仍保存
 let levelIndex = 0;
@@ -1035,6 +1035,12 @@ const I18N_ROWS = [
   ['重置进度', 'Reset Progress', 'Réinitialiser la progression', '進捗をリセット', 'Fortschritt zurücksetzen'],
   ['全屏', 'Fullscreen', 'Plein écran', '全画面', 'Vollbild'],
   ['使用旧版音乐', 'Use old music', 'Utiliser l\'ancienne musique', '旧バージョンの音楽を使用', 'Alte Musik verwenden'],
+  ['音乐盒', 'Music Box', 'Boîte à musique', 'ミュージックボックス', 'Musikbox'],
+  ['选择音乐文件', 'Choose music files', 'Choisir des fichiers audio', '音楽ファイルを選択', 'Musikdateien wählen'],
+  ['已添加', 'Added', 'Ajouté', '追加しました', 'Hinzugefügt'],
+  ['首音乐', 'song(s)', 'musique(s)', '曲', 'Titel'],
+  ['从电脑选择音乐文件，点 ▶ 播放', 'Choose music files from your computer, click ▶ to play', 'Choisissez des fichiers audio, cliquez ▶ pour écouter', 'パソコンから音楽を選び、▶ で再生', 'Musikdateien vom Computer wählen, ▶ zum Abspielen'],
+  ['还没有音乐', 'No music yet', 'Pas encore de musique', 'まだ音楽がありません', 'Noch keine Musik'],
   ['进度已重置 · 从第 1 关重新开始', 'Progress reset · start from level 1', 'Progression réinitialisée · recommencer au niveau 1', '進捗をリセットしました · レベル1から再開', 'Fortschritt zurückgesetzt · ab Level 1 neu'],
   ['关闭', 'Close', 'Fermer', '閉じる', 'Schließen'],
   ['画质', 'Quality', 'Qualité', '画質', 'Qualität'],
@@ -1834,7 +1840,7 @@ function stopMusic() {
 }
 // 是否该播背景音乐：登录/教程不播；标题、游戏、剧情、结算、更衣室等均播
 function musicActiveState() {
-  return state !== 'LOGIN' && state !== 'TUTORIAL';
+  return state !== 'LOGIN' && state !== 'TUTORIAL' && state !== 'MUSICBOX';
 }
 function toggleMusic() {
   musicMuted = !musicMuted;
@@ -6101,6 +6107,7 @@ function drawTitle() {
 
   // 更衣室（左下角）
   drawButton(18, 452, 150, 42, '👕 ' + t('更衣室'), '#7a3fd0');
+  drawButton(176, 452, 130, 42, '🎵 ' + t('音乐盒'), '#2f7fb8');
   // 编辑器 / 我的关卡入口
   for (const b of titleEditorButtons()) drawButton(b.x, b.y, b.w, b.h, t(b.label), b.color);
 
@@ -7386,6 +7393,74 @@ function pickLang(code) {
   else state = 'TITLE';
 }
 
+/* ============================ 音乐盒子 ============================ */
+// 从本地选择音乐文件播放（File API），不内嵌大文件
+let musicBoxSongs = [];      // { name, url }
+let musicBoxCurrent = -1;
+let musicBoxScroll = 0;
+let musicBoxAudio = null;
+let musicFileInput = null;
+if (document.createElement && document.body && document.body.appendChild) {
+  musicFileInput = document.createElement('input');
+  musicFileInput.type = 'file';
+  musicFileInput.accept = 'audio/*';
+  musicFileInput.multiple = true;
+  musicFileInput.style.display = 'none';
+  document.body.appendChild(musicFileInput);
+  musicFileInput.addEventListener('change', () => {
+    const files = Array.from(musicFileInput.files || []);
+    let added = 0;
+    for (const f of files) {
+      if (!(f.type || '').startsWith('audio/')) continue;
+      musicBoxSongs.push({ name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) });
+      added++;
+    }
+    if (added) flashMsg(t('已添加') + ' ' + added + ' ' + t('首音乐'));
+    musicFileInput.value = '';
+  });
+}
+function openMusicBox() { musicBoxStop(); state = 'MUSICBOX'; }
+function musicBoxPlay(i) {
+  musicBoxStop();
+  const s = musicBoxSongs[i];
+  if (!s) return;
+  musicBoxCurrent = i;
+  musicBoxAudio = new Audio(s.url);
+  musicBoxAudio.loop = false;
+  musicBoxAudio.volume = musicMuted ? 0 : musicVol;
+  musicBoxAudio.play().catch(() => {});
+}
+function musicBoxStop() {
+  if (musicBoxAudio) { try { musicBoxAudio.pause(); } catch (e) {} musicBoxAudio = null; }
+  musicBoxCurrent = -1;
+}
+function drawMusicBox() {
+  drawBackground('space');
+  ctx.textAlign = 'center';
+  ctx.font = '900 40px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
+  ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 6;
+  ctx.strokeText('🎵 ' + t('音乐盒子'), VIEW_W / 2, 90);
+  ctx.fillText('🎵 ' + t('音乐盒子'), VIEW_W / 2, 90);
+  drawButton(18, 16, 92, 42, t('← 返回'), 'rgba(0,0,0,.35)');
+  drawButton(VIEW_W / 2 - 130, 130, 260, 50, t('📂 选择音乐文件'), '#2f7fb8');
+  ctx.font = '14px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.65)';
+  ctx.fillText(t('从电脑选择音乐文件，点 ▶ 播放'), VIEW_W / 2, 210);
+  if (musicBoxSongs.length === 0) {
+    ctx.font = 'bold 18px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.75)';
+    ctx.fillText(t('还没有音乐'), VIEW_W / 2, 300);
+  } else {
+    const page = 6;
+    if (musicBoxScroll > 0) drawButton(VIEW_W / 2 - 40, 240, 80, 30, '▲', '#4a4a5a');
+    for (let i = 0; i < page && musicBoxScroll + i < musicBoxSongs.length; i++) {
+      const idx = musicBoxScroll + i;
+      const y = 240 + i * 40;
+      const playing = idx === musicBoxCurrent;
+      const name = musicBoxSongs[idx].name.length > 26 ? musicBoxSongs[idx].name.slice(0, 26) + '…' : musicBoxSongs[idx].name;
+      drawButton(VIEW_W / 2 - 260, y, 440, 36, (playing ? '⏹ ' : '▶ ') + name, playing ? '#3f8a34' : '#4a4a5a');
+    }
+    if (musicBoxScroll + page < musicBoxSongs.length) drawButton(VIEW_W / 2 - 40, 240 + page * 40, 80, 30, '▼', '#4a4a5a');
+  }
+}
 function render() {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   if (state === 'LOGIN') drawLogin();
@@ -7401,6 +7476,7 @@ function render() {
   else if (state === 'CUSTOM') drawCustomList();
   else if (state === 'LOAD') drawLoadMain();
   else if (state === 'WARDROBE') drawWardrobe();
+  else if (state === 'MUSICBOX') drawMusicBox();
   else if (state === 'CREDITS') drawCredits();
   // 设置面板 + 各页面右上角齿轮入口
   if (settingsOpen) {
@@ -7701,6 +7777,7 @@ canvas.addEventListener('pointerdown', e => {
     if (currentUser && x > VIEW_W / 2 - 50 && x < VIEW_W / 2 + 50 && y > 158 && y < 188) { logoutAccount(); flashMsg(t('已退出登录')); return; }
     // 更衣室（左下角）
     if (x > 18 && x < 168 && y > 452 && y < 494) { state = 'WARDROBE'; return; }
+    if (x > 176 && x < 306 && y > 452 && y < 494) { openMusicBox(); return; }
     // 篇章标签
     const tcidx = chapterTabAt(x, y);
     if (tcidx >= 0) { if (chapterUnlocked(tcidx)) chapterIndex = tcidx; return; }
@@ -7734,6 +7811,19 @@ canvas.addEventListener('pointerdown', e => {
     }
     for (const b of wardrobeGlassesBtns()) {
       if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) { glassesIndex = b.idx; saveProgress(); return; }
+    }
+    return;
+  }
+  if (state === 'MUSICBOX') {
+    if (x > 18 && x < 110 && y > 16 && y < 58) { musicBoxStop(); state = 'TITLE'; return; }
+    if (x > VIEW_W / 2 - 130 && x < VIEW_W / 2 + 130 && y > 130 && y < 180) { if (musicFileInput) musicFileInput.click(); return; }
+    // 滚动
+    if (x > VIEW_W / 2 - 40 && x < VIEW_W / 2 + 40 && y > 240 && y < 270) { if (musicBoxScroll > 0) musicBoxScroll--; return; }
+    if (x > VIEW_W / 2 - 40 && x < VIEW_W / 2 + 40 && y > 240 + 6 * 40 && y < 270 + 6 * 40) { if (musicBoxScroll + 6 < musicBoxSongs.length) musicBoxScroll++; return; }
+    // 列表
+    for (let i = 0; i < 6 && musicBoxScroll + i < musicBoxSongs.length; i++) {
+      const by = 240 + i * 40;
+      if (x > VIEW_W / 2 - 260 && x < VIEW_W / 2 + 180 && y > by && y < by + 36) { musicBoxPlay(musicBoxScroll + i); return; }
     }
     return;
   }
