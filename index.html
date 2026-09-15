@@ -1041,6 +1041,7 @@ const I18N_ROWS = [
   ['首音乐', 'song(s)', 'musique(s)', '曲', 'Titel'],
   ['从电脑选择音乐文件，点 ▶ 播放', 'Choose music files from your computer, click ▶ to play', 'Choisissez des fichiers audio, cliquez ▶ pour écouter', 'パソコンから音楽を選び、▶ で再生', 'Musikdateien vom Computer wählen, ▶ zum Abspielen'],
   ['还没有音乐', 'No music yet', 'Pas encore de musique', 'まだ音楽がありません', 'Noch keine Musik'],
+  ['音乐由 Hamsger 制作', 'Music made by Hamsger', 'Musique de Hamsger', '音楽は Hamsger 制作', 'Musik von Hamsger'],
   ['进度已重置 · 从第 1 关重新开始', 'Progress reset · start from level 1', 'Progression réinitialisée · recommencer au niveau 1', '進捗をリセットしました · レベル1から再開', 'Fortschritt zurückgesetzt · ab Level 1 neu'],
   ['关闭', 'Close', 'Fermer', '閉じる', 'Schließen'],
   ['画质', 'Quality', 'Qualité', '画質', 'Qualität'],
@@ -6313,8 +6314,6 @@ function drawCredits() {
     y += 54;
   }
   ctx.textAlign = 'center';
-  ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
-  ctx.fillText('made with Hamsger!', VIEW_W / 2, VIEW_H / 2 + 86);
   ctx.font = 'bold 16px system-ui, sans-serif'; ctx.fillStyle = '#9fd0ff';
   ctx.fillText('🌐 Hamsger-redball-addon.com', VIEW_W / 2, VIEW_H / 2 + 112);
   drawButton(VIEW_W / 2 - 110, VIEW_H / 2 + 132, 220, 50, t('← 返回'), '#556');
@@ -7468,6 +7467,8 @@ function drawMusicBox() {
     }
     if (musicBoxScroll + page < musicBoxSongs.length) drawButton(VIEW_W / 2 - 40, 240 + page * 40, 80, 30, '▼', '#4a4a5a');
   }
+  ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.fillText(t('音乐由 Hamsger 制作'), VIEW_W / 2, VIEW_H - 24);
 }
 function render() {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
