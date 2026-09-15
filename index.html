@@ -776,10 +776,11 @@ const I18N_ROWS = [
   ['无', 'None', 'Aucun', 'なし', 'Keine'],
   // 制作组
   ['制作组', 'Credits', 'Crédits', 'スタッフ', 'Mitwirkende'],
-  ['主制作', 'Lead Producer', 'Production', '制作', 'Produktion'],
-  ['美术', 'Art', 'Direction artistique', 'アート', 'Grafik'],
-  ['想法', 'Idea', 'Idée', 'アイデア', 'Idee'],
-  ['主创作人', 'Lead Creator', 'Créateur principal', '主クリエイター', 'Hauptschöpfer'],
+  ['游戏开发', 'Game Development', 'Développement du jeu', 'ゲーム開発', 'Spielentwicklung'],
+  ['美术与视觉设计', 'Art & Visual Design', 'Art & design visuel', 'アート＆ビジュアルデザイン', 'Kunst & visuelles Design'],
+  ['首席执行官', 'Chief Executive Officer', 'Président-directeur général', '最高経営責任者', 'Geschäftsführer'],
+  ['吉祥物', 'Mascot', 'Mascotte', 'マスコット', 'Maskottchen'],
+  ['支持与改进', 'Support & Improvements', 'Support & améliorations', 'サポート＆改善', 'Support & Verbesserungen'],
   // 登录/身份选择
   ['登录', 'Sign in', 'Connexion', 'ログイン', 'Anmelden'],
   ['请选择身份', 'Choose who you are', 'Choisissez votre profil', '身份を選んでください', 'Profil wählen'],
@@ -6303,32 +6304,34 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 function drawCredits() {
   drawBackground('space');
-  drawPanel(560, 460);
+  drawPanel(560, 560);
   ctx.textAlign = 'center';
   ctx.font = '900 40px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
   ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 5; ctx.lineJoin = 'round';
-  ctx.strokeText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 168);
-  ctx.fillText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 168);
+  ctx.strokeText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 220);
+  ctx.fillText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 220);
 
   const rows = [
-    [t('主制作'), 'DS'],
-    [t('美术'), 'DS'],
-    [t('想法'), 'ZGL'],
-    [t('主创作人'), 'ZAYNE'],
+    [t('游戏开发'), 'DeSe'],
+    [t('音乐'), 'Sol & Zayne'],
+    [t('美术与视觉设计'), 'DS'],
+    [t('首席执行官'), 'Zayne'],
+    [t('吉祥物'), 'Hamsger'],
+    [t('支持与改进'), 'zgl'],
   ];
-  let y = VIEW_H / 2 - 80;
+  let y = VIEW_H / 2 - 130;
   for (const [role, name] of rows) {
     ctx.font = 'bold 22px system-ui, sans-serif';
     ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.82)';
-    ctx.fillText(role + '：', VIEW_W / 2 - 24, y);
+    ctx.fillText(role + ':', VIEW_W / 2 - 24, y);
     ctx.textAlign = 'left'; ctx.fillStyle = '#ffd23e'; ctx.font = '900 28px system-ui, sans-serif';
     ctx.fillText(name, VIEW_W / 2 + 6, y);
-    y += 54;
+    y += 44;
   }
   ctx.textAlign = 'center';
   ctx.font = 'bold 16px system-ui, sans-serif'; ctx.fillStyle = '#9fd0ff';
-  ctx.fillText('🌐 Hamsger-redball-addon.com', VIEW_W / 2, VIEW_H / 2 + 112);
-  drawButton(VIEW_W / 2 - 110, VIEW_H / 2 + 132, 220, 50, t('← 返回'), '#556');
+  ctx.fillText('🌐 Hamsger-redball-addon.com', VIEW_W / 2, VIEW_H / 2 + 150);
+  drawButton(VIEW_W / 2 - 110, VIEW_H / 2 + 172, 220, 50, t('← 返回'), '#556');
 }
 
 function themeColor(i) {
