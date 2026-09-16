@@ -8,12 +8,11 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// —— 逻辑分辨率 ——（固定 960×540，等比缩放适配窗口，多余空间以背景色填充，保证完整 UI 永不裁切）
-const VIEW_W = 960;
-const VIEW_H = 540;
+// —— 逻辑分辨率 ——（响应式：始终等于浏览器可用区域，游戏画面铺满窗口、无黑边；世界/天空随窗口比例扩展）
+let VIEW_W = 960;
+let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
-const WORLD_TOP = 40;        // 游戏世界顶部留白：关卡内容从这条线以下才开始渲染，避免世界贴顶
-const GAME_VERSION = '2.3';   // 游戏版本号
+const GAME_VERSION = '2.4';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -27,18 +26,15 @@ function applyQuality() {
   ctx.imageSmoothingQuality = 'high';
 }
 function applyViewport() {
-  const sw = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || VIEW_W;
-  const sh = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || VIEW_H;
-  // 等比缩放：整个 960×540 逻辑画面始终完整可见，保持比例不拉伸，多余空间用背景色填充（黑边/留白）。
-  // 用内联样式直接居中定位，不依赖外部 CSS，避免缓存/兼容性导致的错位。
-  const scale = Math.min(sw / VIEW_W, sh / VIEW_H);
-  const dw = Math.round(VIEW_W * scale);
-  const dh = Math.round(VIEW_H * scale);
+  // 响应式视口：逻辑分辨率直接等于浏览器可用区域，画布铺满整个窗口，无黑边/留白。
+  // 世界与天空随窗口宽高比扩展；游戏单位保持 1:1（仅按画质倍率渲染，不做拉伸）。
+  VIEW_W = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 960;
+  VIEW_H = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || 540;
   canvas.style.position = 'absolute';
-  canvas.style.left = Math.round((sw - dw) / 2) + 'px';
-  canvas.style.top = Math.round((sh - dh) / 2) + 'px';
-  canvas.style.width = dw + 'px';
-  canvas.style.height = dh + 'px';
+  canvas.style.left = '0px';
+  canvas.style.top = '0px';
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
   applyQuality();
 }
 applyViewport();
@@ -3235,7 +3231,7 @@ function applyLevel(L) {
   wasInWater = false; rollCd = 0;
   lastGrounded = -1; lastJumpPress = -1;
   cam.x = clamp(ball.x - VIEW_W * 0.4, 0, Math.max(0, levelWidth() - VIEW_W));
-  cam.y = clamp(ball.y - VIEW_H * 0.55, 0, Math.max(0, mapH - VIEW_H + WORLD_TOP));
+  cam.y = camTargetY(ball.y);
   particles = [];
   trail = [];
   jumpQueued = false;
@@ -3244,6 +3240,12 @@ let scoreboardTotal = 0;
 
 /* ============================ 工具 ============================ */
 function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+// 相机垂直目标：地图比屏幕矮时，把地面贴到屏幕底（天空补在上方）；否则常规跟随并限制在 [0, mapH-VIEW_H]
+function camTargetY(ballY) {
+  return mapH <= VIEW_H ? (mapH - VIEW_H) : clamp(ballY - VIEW_H * 0.55, 0, mapH - VIEW_H);
+}
+// 标题界面垂直偏移：把 540 高的固定布局在更高屏幕上垂直居中（更矮屏幕保持原样）
+function titleY() { return Math.max(0, Math.round((VIEW_H - 540) / 2)); }
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -4739,7 +4741,7 @@ function update(dt) {
   if (!(chase && chase.on)) {
     const targetX = clamp(ball.x - VIEW_W * 0.4, 0, Math.max(0, levelWidth() - VIEW_W));
     cam.x += (targetX - cam.x) * (1 - Math.exp(-6 * dt));
-    const targetY = clamp(ball.y - VIEW_H * 0.55, 0, Math.max(0, mapH - VIEW_H + WORLD_TOP));
+    const targetY = camTargetY(ball.y);
     cam.y += (targetY - cam.y) * (1 - Math.exp(-6 * dt));
   }
 
@@ -4812,7 +4814,7 @@ function spawnConfetti(x, y, n) { const cs = ['#ff5a5a', '#ffd23e', '#5ad1ff', '
 
 /* ============================ 渲染 ============================ */
 function drawBackground(t) {
-  // 让画布外的留边（非 16:9 屏幕）沿用本关天空的渐变，像背景自然延伸出去（按钮/画面保持 16:9 不变）
+  // 响应式下画布铺满窗口，body 背景不可见，仅作兜底（防止极窄/加载瞬间露出底色）
   const bodyBg = {
     grass: 'linear-gradient(180deg, #7ec8f7 0%, #cdeeff 70%, #bfe4ff 100%)',
     forest: 'linear-gradient(180deg, #2f5d3a 0%, #3f7d50 60%, #27432f 100%)',
@@ -4830,11 +4832,11 @@ function drawBackground(t) {
     for (let i = 0; i < 8; i++) {
       const x = ((i * 340 + 120) % (VIEW_W + 400)) - 200;
       const h = 220 + (i % 3) * 50;
-      drawTree(x - cam.x * 0.25, 460, h, 'rgba(20,45,28,.5)');
+      drawTree(x - cam.x * 0.25, VIEW_H - 80, h, 'rgba(20,45,28,.5)');
     }
     for (let i = 0; i < 5; i++) {
       const x = ((i * 480 + 60) % (VIEW_W + 400)) - 200;
-      drawTree(x - cam.x * 0.4, 470, 150 + (i % 3) * 40, 'rgba(28,58,36,.7)');
+      drawTree(x - cam.x * 0.4, VIEW_H - 70, 150 + (i % 3) * 40, 'rgba(28,58,36,.7)');
     }
     drawBirds(time);
     drawFallingLeaves(time);
@@ -4967,8 +4969,8 @@ function drawBackground(t) {
     drawButterfly(((time * 34 + 180) % (VIEW_W + 60)) - 30, 150 + Math.sin(time * 1.4) * 22, time, '#ff9ad5', '#e050a0');
     drawButterfly(((time * 26 + 620) % (VIEW_W + 60)) - 30, 210 + Math.sin(time * 1.1 + 2) * 26, time, '#ffd23e', '#f0a020');
     drawButterfly(((time * 40 + 980) % (VIEW_W + 60)) - 30, 120 + Math.sin(time * 0.9 + 4) * 18, time, '#7ec8ff', '#3a8fd0');
-    drawHills(-cam.x * 0.3, 430, '#c5e6b0');
-    drawHills(-cam.x * 0.5 + 300, 460, '#aad79a');
+    drawHills(-cam.x * 0.3, VIEW_H - 110, '#c5e6b0');
+    drawHills(-cam.x * 0.5 + 300, VIEW_H - 80, '#aad79a');
   }
 }
 function drawCloud(x, y) {
@@ -6076,7 +6078,7 @@ function chapterUnlocked(c) { return maxUnlocked >= c * CHAPTER_SIZE + 1; }
 function chapterTabs() {
   const n = CHAPTERS.length, w = 150, gap = 10;
   const totalW = n * w + (n - 1) * gap;
-  const x0 = VIEW_W / 2 - totalW / 2, y = 224, h = 40;
+  const x0 = VIEW_W / 2 - totalW / 2, y = 224 + titleY(), h = 40;
   const tabs = [];
   for (let c = 0; c < n; c++) tabs.push({ c, x: x0 + c * (w + gap), y, w, h });
   return tabs;
@@ -6104,7 +6106,7 @@ function drawChapterTabs() {
 function levelButtons() {
   const cols = 5, bw = 72, bh = 46, gap = 12;
   const totalW = cols * bw + (cols - 1) * gap;
-  const x0 = VIEW_W / 2 - totalW / 2, y0 = 276;
+  const x0 = VIEW_W / 2 - totalW / 2, y0 = 276 + titleY();
   const btns = [];
   const base = chapterIndex * CHAPTER_SIZE;
   for (let k = 0; k < CHAPTER_SIZE; k++) {
@@ -6118,25 +6120,26 @@ function drawTitle() {
   drawBackground('grass');
   drawFloatingText();
   const sk = SKINS[skinIndex];
+  const ty = titleY();
 
   // 标题
   ctx.textAlign = 'center';
   ctx.font = '900 50px system-ui, sans-serif'; ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 7; ctx.lineJoin = 'round';
-  ctx.strokeText('Badball.HSgame', VIEW_W / 2, 74);
-  ctx.fillText('Badball.HSgame', VIEW_W / 2, 74);
+  ctx.strokeText('Badball.HSgame', VIEW_W / 2, 74 + ty);
+  ctx.fillText('Badball.HSgame', VIEW_W / 2, 74 + ty);
   ctx.font = 'bold 17px system-ui, sans-serif'; ctx.fillStyle = '#17324d';
-  ctx.fillText(t('滚动跳跃 · 收集星星 · 75 关冒险 · 五大篇章 · 击败魔王'), VIEW_W / 2, 104);
+  ctx.fillText(t('滚动跳跃 · 收集星星 · 75 关冒险 · 五大篇章 · 击败魔王'), VIEW_W / 2, 104 + ty);
 
   // 账号显示 + 退出登录
   if (currentUser) {
     ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = '#17324d';
-    ctx.fillText('👤 ' + currentUser, VIEW_W / 2, 150);
-    drawButton(VIEW_W / 2 - 50, 158, 100, 30, t('退出登录'), '#a33a3a');
+    ctx.fillText('👤 ' + currentUser, VIEW_W / 2, 150 + ty);
+    drawButton(VIEW_W / 2 - 50, 158 + ty, 100, 30, t('退出登录'), '#a33a3a');
   }
 
   // 左下角红球预览（更衣室上面）
-  const by = 390 + Math.sin(time * 2) * 4;
+  const by = 390 + ty + Math.sin(time * 2) * 4;
   ctx.save(); ctx.translate(93, by);
   drawGlow(30, sk);
   ctx.shadowColor = sk.c1 + 'cc'; ctx.shadowBlur = 22;
@@ -6189,11 +6192,11 @@ function drawTitle() {
   }
 
   ctx.font = '15px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.9)';
-  ctx.fillText(t('← → 或 A D 移动 · ↑/空格/W 跳跃 · R 重开 · M 菜单 · U 无敌 · G 飞行'), VIEW_W / 2, 504);
+  ctx.fillText(t('← → 或 A D 移动 · ↑/空格/W 跳跃 · R 重开 · M 菜单 · U 无敌 · G 飞行'), VIEW_W / 2, 504 + ty);
 
   // 更衣室（左下角）
-  drawButton(18, 452, 150, 42, '👕 ' + t('更衣室'), '#7a3fd0');
-  drawButton(176, 452, 130, 42, '🎵 ' + t('音乐盒'), '#2f7fb8');
+  drawButton(18, 452 + ty, 150, 42, '👕 ' + t('更衣室'), '#7a3fd0');
+  drawButton(176, 452 + ty, 130, 42, '🎵 ' + t('音乐盒'), '#2f7fb8');
   // 版本号（右下角）
   ctx.font = 'bold 13px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.45)';
   ctx.textAlign = 'right';
@@ -6680,7 +6683,7 @@ function drawWorld() {
   ctx.save();
   let sx = 0, sy = 0;
   if (shake > 0.5) { sx = (Math.random() - 0.5) * shake; sy = (Math.random() - 0.5) * shake; }
-  ctx.translate(-Math.round(cam.x) + sx, -Math.round(cam.y) + sy + WORLD_TOP);
+  ctx.translate(-Math.round(cam.x) + sx, -Math.round(cam.y) + sy);
   for (const s of solids) drawSolid(s);
   for (const f of fakes) drawFake(f);
   for (const o of oneways) drawOneway(o);
@@ -7377,8 +7380,8 @@ function loadMainAt(x, y) {
 /* ============================ 标题入口按钮 ============================ */
 function titleEditorButtons() {
   return [
-    { id: 'editor', x: VIEW_W / 2 - 172, y: 452, w: 164, h: 42, label: '🛠 关卡编辑器', color: '#2f7fb8' },
-    { id: 'custom', x: VIEW_W / 2 + 8, y: 452, w: 164, h: 42, label: '▶ 我的关卡', color: '#7a5fb8' },
+    { id: 'editor', x: VIEW_W / 2 - 172, y: 452 + titleY(), w: 164, h: 42, label: '🛠 关卡编辑器', color: '#2f7fb8' },
+    { id: 'custom', x: VIEW_W / 2 + 8, y: 452 + titleY(), w: 164, h: 42, label: '▶ 我的关卡', color: '#7a5fb8' },
   ];
 }
 
@@ -7875,10 +7878,10 @@ canvas.addEventListener('pointerdown', e => {
     // 制作组
     if (x > 104 && x < 196 && y > 16 && y < 58) { state = 'CREDITS'; return; }
     // 退出登录
-    if (currentUser && x > VIEW_W / 2 - 50 && x < VIEW_W / 2 + 50 && y > 158 && y < 188) { logoutAccount(); flashMsg(t('已退出登录')); return; }
+    if (currentUser && x > VIEW_W / 2 - 50 && x < VIEW_W / 2 + 50 && y > 158 + titleY() && y < 188 + titleY()) { logoutAccount(); flashMsg(t('已退出登录')); return; }
     // 更衣室（左下角）
-    if (x > 18 && x < 168 && y > 452 && y < 494) { state = 'WARDROBE'; return; }
-    if (x > 176 && x < 306 && y > 452 && y < 494) { openMusicBox(); return; }
+    if (x > 18 && x < 168 && y > 452 + titleY() && y < 494 + titleY()) { state = 'WARDROBE'; return; }
+    if (x > 176 && x < 306 && y > 452 + titleY() && y < 494 + titleY()) { openMusicBox(); return; }
     // 篇章标签
     const tcidx = chapterTabAt(x, y);
     if (tcidx >= 0) { if (chapterUnlocked(tcidx)) chapterIndex = tcidx; return; }
