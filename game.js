@@ -11,7 +11,7 @@ const ctx = canvas.getContext('2d');
 // —— 逻辑分辨率 ——（固定 960×540，等比缩放适配窗口，多余空间以背景色填充，保证完整 UI 永不裁切）
 const VIEW_W = 960;
 const VIEW_H = 540;
-const GAME_VERSION = '1.8';   // 游戏版本号
+const GAME_VERSION = '1.9';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -27,10 +27,16 @@ function applyQuality() {
 function applyViewport() {
   const sw = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || VIEW_W;
   const sh = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || VIEW_H;
-  // 等比缩放：整个 960×540 逻辑画面始终完整可见，保持比例不拉伸，多余空间用背景色填充（黑边/留白）
+  // 等比缩放：整个 960×540 逻辑画面始终完整可见，保持比例不拉伸，多余空间用背景色填充（黑边/留白）。
+  // 用内联样式直接居中定位，不依赖外部 CSS，避免缓存/兼容性导致的错位。
   const scale = Math.min(sw / VIEW_W, sh / VIEW_H);
-  canvas.style.width = Math.round(VIEW_W * scale) + 'px';
-  canvas.style.height = Math.round(VIEW_H * scale) + 'px';
+  const dw = Math.round(VIEW_W * scale);
+  const dh = Math.round(VIEW_H * scale);
+  canvas.style.position = 'absolute';
+  canvas.style.left = Math.round((sw - dw) / 2) + 'px';
+  canvas.style.top = Math.round((sh - dh) / 2) + 'px';
+  canvas.style.width = dw + 'px';
+  canvas.style.height = dh + 'px';
   applyQuality();
 }
 applyViewport();
