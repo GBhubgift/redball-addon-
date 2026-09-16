@@ -12,8 +12,8 @@ const ctx = canvas.getContext('2d');
 let VIEW_W = 960;
 let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
-const WORLD_ZOOM = 2;        // 关卡世界缩放：2 倍放大（地形/球/敌人整体放大，与 HUD 一致）
-const GAME_VERSION = '2.10';  // 游戏版本号
+const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
+const GAME_VERSION = '2.11';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
