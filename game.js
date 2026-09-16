@@ -12,7 +12,8 @@ const ctx = canvas.getContext('2d');
 let VIEW_W = 960;
 let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
-const GAME_VERSION = '2.9';   // 游戏版本号
+const WORLD_ZOOM = 2;        // 关卡世界缩放：2 倍放大（地形/球/敌人整体放大，与 HUD 一致）
+const GAME_VERSION = '2.10';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -3231,7 +3232,7 @@ function applyLevel(L) {
   vertySpeechUntil = 0; vertyNextSpeak = 4;
   wasInWater = false; rollCd = 0;
   lastGrounded = -1; lastJumpPress = -1;
-  cam.x = clamp(ball.x - VIEW_W * 0.4, 0, Math.max(0, levelWidth() - VIEW_W));
+  cam.x = clamp(ball.x - (VIEW_W / WORLD_ZOOM) * 0.4, 0, Math.max(0, levelWidth() - VIEW_W / WORLD_ZOOM));
   cam.y = camTargetY(ball.y);
   particles = [];
   trail = [];
@@ -3243,7 +3244,8 @@ let scoreboardTotal = 0;
 function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 // 相机垂直目标：地图比屏幕矮时，把地面贴到屏幕底（天空补在上方）；否则常规跟随并限制在 [0, mapH-VIEW_H]
 function camTargetY(ballY) {
-  return mapH <= VIEW_H ? (mapH - VIEW_H) : clamp(ballY - VIEW_H * 0.55, 0, mapH - VIEW_H);
+  const VH = VIEW_H / WORLD_ZOOM;
+  return mapH <= VH ? (mapH - VH) : clamp(ballY - VH * 0.55, 0, mapH - VH);
 }
 // 主界面缩放：以 960×540 设计为基准，随窗口等比放大（保持比例，避免大屏下 UI 过小）
 function uiScale() { return Math.min(VIEW_W / 960, VIEW_H / 540); }
@@ -4049,7 +4051,7 @@ function updateProjectiles(dt) {
       if (ball.inv <= 0) hurt();
       p.dead = true;
     }
-    if (p.life <= 0 || p.x < cam.x - 80 || p.x > cam.x + VIEW_W + 80 || p.y > killY + 40) p.dead = true;
+    if (p.life <= 0 || p.x < cam.x - 80 || p.x > cam.x + VIEW_W / WORLD_ZOOM + 80 || p.y > killY + 40) p.dead = true;
   }
   projectiles = projectiles.filter(p => !p.dead);
 }
@@ -4371,9 +4373,9 @@ function drawBeam(b, t) {
   ctx.save();
   ctx.shadowColor = '#ff2040'; ctx.shadowBlur = warning ? 8 : 22;
   ctx.fillStyle = warning ? `rgba(255,90,90,${a})` : `rgba(255,40,60,${a})`;
-  ctx.fillRect(cam.x, b.y - h / 2, VIEW_W, h);
+  ctx.fillRect(cam.x, b.y - h / 2, VIEW_W / WORLD_ZOOM, h);
   ctx.fillStyle = warning ? 'rgba(255,220,220,.5)' : 'rgba(255,220,220,.9)';
-  ctx.fillRect(cam.x, b.y - 1.5, VIEW_W, 3);
+  ctx.fillRect(cam.x, b.y - 1.5, VIEW_W / WORLD_ZOOM, 3);
   ctx.restore();
 }
 function drawLava(lv, t) {
@@ -4389,30 +4391,30 @@ function drawLava(lv, t) {
 
 /* —— 方块博士追逐序列 —— */
 function startChase() {
-  chase = { on: true, speed: 300, t: 0, doctorX: ball.x + VIEW_W * 0.55, endX: levelWidth() - VIEW_W * 0.25, spawnT: 0.6 };
+  chase = { on: true, speed: 300, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, endX: levelWidth() - (VIEW_W / WORLD_ZOOM) * 0.25, spawnT: 0.6 };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   flashMsg(t('追上去！别被甩掉！'));
 }
 function updateChase(dt) {
   if (!chase || !chase.on) return;
   chase.t += dt;
-  const maxCam = Math.max(0, levelWidth() - VIEW_W);
+  const maxCam = Math.max(0, levelWidth() - VIEW_W / WORLD_ZOOM);
   cam.x += chase.speed * dt;
   if (cam.x >= maxCam) { cam.x = maxCam; chase.on = false; sfx.win(); winLevel(); return; }
-  chase.doctorX = cam.x + VIEW_W * 0.62 + Math.sin(chase.t * 5) * 16;   // 钉在镜头前方，轻微左右摆动
+  chase.doctorX = cam.x + (VIEW_W / WORLD_ZOOM) * 0.62 + Math.sin(chase.t * 5) * 16;   // 钉在镜头前方，轻微左右摆动
   if (ball.x < cam.x - 40) { ball.x = cam.x + 90; ball.vy = -200; }   // 被甩出左屏：前推（不掉血）
   chase.spawnT -= dt;
   if (chase.spawnT <= 0) {
     chase.spawnT = 0.7;
-    if (Math.random() < 0.55) gears.push({ x: cam.x + VIEW_W + 40, y: -40, r: 26, angle: 0, spin: 3, vy: 0, life: 3, dead: false });
-    else projectiles.push({ x: cam.x + VIEW_W + 40, y: mapH - 200, vx: -330, vy: 0, r: 9, life: 5, dead: false });
+    if (Math.random() < 0.55) gears.push({ x: cam.x + VIEW_W / WORLD_ZOOM + 40, y: -40, r: 26, angle: 0, spin: 3, vy: 0, life: 3, dead: false });
+    else projectiles.push({ x: cam.x + VIEW_W / WORLD_ZOOM + 40, y: mapH - 200, vx: -330, vy: 0, r: 9, life: 5, dead: false });
   }
 }
 function drawChase() {
   if (!chase || !chase.on) return;
   ctx.save();
   // 逃窜的小黑方块博士
-  const dx = chase.doctorX - cam.x;
+  const dx = (chase.doctorX - cam.x) * WORLD_ZOOM;
   ctx.fillStyle = '#000'; roundRect(dx - 16, VIEW_H * 0.62 - 16, 32, 32, 5); ctx.fill();
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(dx - 5, VIEW_H * 0.62 - 6, 3, 0, 7); ctx.fill();
@@ -4752,7 +4754,7 @@ function update(dt) {
   // 相机（方块博士追逐阶段由 updateChase 强制右滚，这里跳过跟随）
   shake = Math.max(0, shake - dt * 40);
   if (!(chase && chase.on)) {
-    const targetX = clamp(ball.x - VIEW_W * 0.4, 0, Math.max(0, levelWidth() - VIEW_W));
+    const targetX = clamp(ball.x - (VIEW_W / WORLD_ZOOM) * 0.4, 0, Math.max(0, levelWidth() - VIEW_W / WORLD_ZOOM));
     cam.x += (targetX - cam.x) * (1 - Math.exp(-6 * dt));
     const targetY = camTargetY(ball.y);
     cam.y += (targetY - cam.y) * (1 - Math.exp(-6 * dt));
@@ -6709,7 +6711,9 @@ function drawWorld() {
   ctx.save();
   let sx = 0, sy = 0;
   if (shake > 0.5) { sx = (Math.random() - 0.5) * shake; sy = (Math.random() - 0.5) * shake; }
-  ctx.translate(-Math.round(cam.x) + sx, -Math.round(cam.y) + sy);
+  ctx.translate(sx, sy);
+  ctx.scale(WORLD_ZOOM, WORLD_ZOOM);
+  ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
   for (const s of solids) drawSolid(s);
   for (const f of fakes) drawFake(f);
   for (const o of oneways) drawOneway(o);
