@@ -12,7 +12,7 @@ const ctx = canvas.getContext('2d');
 let VIEW_W = 960;
 let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
-const GAME_VERSION = '2.4';   // 游戏版本号
+const GAME_VERSION = '2.5';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -1978,7 +1978,7 @@ let settingsDrag = null;        // 正在拖动的滑块：'music' | 'sfx'
 function openSettings() { settingsOpen = true; settingsDrag = null; }
 function closeSettings() { settingsOpen = false; settingsDrag = null; }
 function settingsBtn() {
-  if (state === 'TITLE') return { x: VIEW_W - 286, y: 30, w: 42, h: 42 };
+  if (state === 'TITLE') return { x: 960 - 286, y: 30, w: 42, h: 42 };
   if (state === 'EDIT') return { x: 16, y: 8, w: 34, h: 34 };
   return { x: VIEW_W - 62, y: HUD_TOP, w: 50, h: 34 };
 }
@@ -3244,8 +3244,18 @@ function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 function camTargetY(ballY) {
   return mapH <= VIEW_H ? (mapH - VIEW_H) : clamp(ballY - VIEW_H * 0.55, 0, mapH - VIEW_H);
 }
-// 标题界面垂直偏移：把 540 高的固定布局在更高屏幕上垂直居中（更矮屏幕保持原样）
-function titleY() { return Math.max(0, Math.round((VIEW_H - 540) / 2)); }
+// 主界面缩放：以 960×540 设计为基准，随窗口等比放大（保持比例，避免大屏下 UI 过小）
+function uiScale() { return Math.min(VIEW_W / 960, VIEW_H / 540); }
+// 主界面设计区变换：把 960×540 设计坐标居中映射到屏幕（背景仍铺满全屏，仅 UI 居中缩放）
+function titleTransform() {
+  const s = uiScale();
+  return { s, ox: (VIEW_W - 960 * s) / 2, oy: (VIEW_H - 540 * s) / 2 };
+}
+// 屏幕坐标 → 主界面设计坐标（供点击命中测试用）
+function toDesign(x, y) {
+  const tr = titleTransform();
+  return { x: (x - tr.ox) / tr.s, y: (y - tr.oy) / tr.s };
+}
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -4985,7 +4995,7 @@ function drawFloatingText() {
   const txt = 'made with Hamsger!';
   const spacing = 36;
   const totalW = (txt.length - 1) * spacing;
-  const x0 = VIEW_W / 2 - totalW / 2;
+  const x0 = 480 - totalW / 2;
   const baseY = 132;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   for (let i = 0; i < txt.length; i++) {
@@ -6078,7 +6088,7 @@ function chapterUnlocked(c) { return maxUnlocked >= c * CHAPTER_SIZE + 1; }
 function chapterTabs() {
   const n = CHAPTERS.length, w = 150, gap = 10;
   const totalW = n * w + (n - 1) * gap;
-  const x0 = VIEW_W / 2 - totalW / 2, y = 224 + titleY(), h = 40;
+  const x0 = 480 - totalW / 2, y = 224, h = 40;
   const tabs = [];
   for (let c = 0; c < n; c++) tabs.push({ c, x: x0 + c * (w + gap), y, w, h });
   return tabs;
@@ -6106,7 +6116,7 @@ function drawChapterTabs() {
 function levelButtons() {
   const cols = 5, bw = 72, bh = 46, gap = 12;
   const totalW = cols * bw + (cols - 1) * gap;
-  const x0 = VIEW_W / 2 - totalW / 2, y0 = 276 + titleY();
+  const x0 = 480 - totalW / 2, y0 = 276;
   const btns = [];
   const base = chapterIndex * CHAPTER_SIZE;
   for (let k = 0; k < CHAPTER_SIZE; k++) {
@@ -6118,28 +6128,31 @@ function levelButtons() {
 
 function drawTitle() {
   drawBackground('grass');
-  drawFloatingText();
   const sk = SKINS[skinIndex];
-  const ty = titleY();
+  const tr = titleTransform();
+  ctx.save();
+  ctx.translate(tr.ox, tr.oy);
+  ctx.scale(tr.s, tr.s);
+  drawFloatingText();
 
   // 标题
   ctx.textAlign = 'center';
   ctx.font = '900 50px system-ui, sans-serif'; ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 7; ctx.lineJoin = 'round';
-  ctx.strokeText('Badball.HSgame', VIEW_W / 2, 74 + ty);
-  ctx.fillText('Badball.HSgame', VIEW_W / 2, 74 + ty);
+  ctx.strokeText('Badball.HSgame', 480, 74);
+  ctx.fillText('Badball.HSgame', 480, 74);
   ctx.font = 'bold 17px system-ui, sans-serif'; ctx.fillStyle = '#17324d';
-  ctx.fillText(t('滚动跳跃 · 收集星星 · 75 关冒险 · 五大篇章 · 击败魔王'), VIEW_W / 2, 104 + ty);
+  ctx.fillText(t('滚动跳跃 · 收集星星 · 75 关冒险 · 五大篇章 · 击败魔王'), 480, 104);
 
   // 账号显示 + 退出登录
   if (currentUser) {
     ctx.font = 'bold 15px system-ui, sans-serif'; ctx.fillStyle = '#17324d';
-    ctx.fillText('👤 ' + currentUser, VIEW_W / 2, 150 + ty);
-    drawButton(VIEW_W / 2 - 50, 158 + ty, 100, 30, t('退出登录'), '#a33a3a');
+    ctx.fillText('👤 ' + currentUser, 480, 150);
+    drawButton(480 - 50, 158, 100, 30, t('退出登录'), '#a33a3a');
   }
 
   // 左下角红球预览（更衣室上面）
-  const by = 390 + ty + Math.sin(time * 2) * 4;
+  const by = 390 + Math.sin(time * 2) * 4;
   ctx.save(); ctx.translate(93, by);
   drawGlow(30, sk);
   ctx.shadowColor = sk.c1 + 'cc'; ctx.shadowBlur = 22;
@@ -6192,29 +6205,33 @@ function drawTitle() {
   }
 
   ctx.font = '15px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.9)';
-  ctx.fillText(t('← → 或 A D 移动 · ↑/空格/W 跳跃 · R 重开 · M 菜单 · U 无敌 · G 飞行'), VIEW_W / 2, 504 + ty);
+  ctx.fillText(t('← → 或 A D 移动 · ↑/空格/W 跳跃 · R 重开 · M 菜单 · U 无敌 · G 飞行'), 480, 504);
 
   // 更衣室（左下角）
-  drawButton(18, 452 + ty, 150, 42, '👕 ' + t('更衣室'), '#7a3fd0');
-  drawButton(176, 452 + ty, 130, 42, '🎵 ' + t('音乐盒'), '#2f7fb8');
-  // 版本号（右下角）
+  drawButton(18, 452, 150, 42, '👕 ' + t('更衣室'), '#7a3fd0');
+  drawButton(176, 452, 130, 42, '🎵 ' + t('音乐盒'), '#2f7fb8');
+  // 版本号（右下角，设计区）
   ctx.font = 'bold 13px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.45)';
   ctx.textAlign = 'right';
-  ctx.fillText('v' + GAME_VERSION, VIEW_W - 16, VIEW_H - 12);
+  ctx.fillText('v' + GAME_VERSION, 960 - 16, 540 - 12);
   ctx.textAlign = 'center';
   // 编辑器 / 我的关卡入口
   for (const b of titleEditorButtons()) drawButton(b.x, b.y, b.w, b.h, t(b.label), b.color);
 
+  // 设置齿轮（右上角）
+  drawButton(960 - 286, 30, 42, 42, '⚙️', 'rgba(0,0,0,.35)');
   // 语言切换
-  drawButton(VIEW_W - 232, 30, 86, 42, langName(LANG), 'rgba(0,0,0,.35)');
+  drawButton(960 - 232, 30, 86, 42, langName(LANG), 'rgba(0,0,0,.35)');
   // 音乐开关
-  drawButton(VIEW_W - 140, 30, 58, 42, musicMuted ? '🔇' : '🎵', 'rgba(0,0,0,.35)');
+  drawButton(960 - 140, 30, 58, 42, musicMuted ? '🔇' : '🎵', 'rgba(0,0,0,.35)');
   // 音效开关
-  drawButton(VIEW_W - 76, 30, 58, 42, sfxMuted ? '🔕' : '🔊', 'rgba(0,0,0,.35)');
+  drawButton(960 - 76, 30, 58, 42, sfxMuted ? '🔕' : '🔊', 'rgba(0,0,0,.35)');
   // 新手教程
   drawButton(18, 30, 76, 42, t('🎓 教程'), 'rgba(0,0,0,.35)');
   // 制作组
   drawButton(104, 30, 92, 42, '👥 ' + t('制作组'), 'rgba(0,0,0,.35)');
+
+  ctx.restore();
 }
 
 /* ============================ 更衣室 ============================ */
@@ -7380,8 +7397,8 @@ function loadMainAt(x, y) {
 /* ============================ 标题入口按钮 ============================ */
 function titleEditorButtons() {
   return [
-    { id: 'editor', x: VIEW_W / 2 - 172, y: 452 + titleY(), w: 164, h: 42, label: '🛠 关卡编辑器', color: '#2f7fb8' },
-    { id: 'custom', x: VIEW_W / 2 + 8, y: 452 + titleY(), w: 164, h: 42, label: '▶ 我的关卡', color: '#7a5fb8' },
+    { id: 'editor', x: 480 - 172, y: 452, w: 164, h: 42, label: '🛠 关卡编辑器', color: '#2f7fb8' },
+    { id: 'custom', x: 480 + 8, y: 452, w: 164, h: 42, label: '▶ 我的关卡', color: '#7a5fb8' },
   ];
 }
 
@@ -7585,7 +7602,7 @@ function render() {
   // 设置面板 + 各页面右上角齿轮入口
   if (settingsOpen) {
     drawSettings();
-  } else if (state !== 'LOGIN' && state !== 'LANGSEL') {
+  } else if (state !== 'LOGIN' && state !== 'LANGSEL' && state !== 'TITLE') {
     const g = settingsBtn();
     drawButton(g.x, g.y, g.w, g.h, state === 'PLAY' ? '⚙️ [I]' : '⚙️', 'rgba(0,0,0,.35)');
   }
@@ -7832,7 +7849,10 @@ canvas.addEventListener('pointerdown', e => {
   // 齿轮入口（各页面右上角）
   if (state !== 'LOGIN' && state !== 'LANGSEL') {
     const g = settingsBtn();
-    if (x >= g.x && x <= g.x + g.w && y >= g.y && y <= g.y + g.h) { settingsOpen = true; return; }
+    if (state === 'TITLE') {
+      const d = toDesign(x, y);
+      if (d.x >= g.x && d.x <= g.x + g.w && d.y >= g.y && d.y <= g.y + g.h) { settingsOpen = true; return; }
+    } else if (x >= g.x && x <= g.x + g.w && y >= g.y && y <= g.y + g.h) { settingsOpen = true; return; }
   }
 
   if (state === 'LOGIN') {
@@ -7867,34 +7887,35 @@ canvas.addEventListener('pointerdown', e => {
   }
 
   if (state === 'TITLE') {
+    const d = toDesign(x, y);
     // 语言切换
-    if (x > VIEW_W - 232 && x < VIEW_W - 146 && y > 16 && y < 58) { cycleLang(); return; }
+    if (d.x > 960 - 232 && d.x < 960 - 146 && d.y > 16 && d.y < 58) { cycleLang(); return; }
     // 音乐开关
-    if (x > VIEW_W - 140 && x < VIEW_W - 82 && y > 16 && y < 58) { toggleMusic(); return; }
+    if (d.x > 960 - 140 && d.x < 960 - 82 && d.y > 16 && d.y < 58) { toggleMusic(); return; }
     // 音效开关
-    if (x > VIEW_W - 76 && x < VIEW_W - 18 && y > 16 && y < 58) { toggleSfx(); return; }
+    if (d.x > 960 - 76 && d.x < 960 - 18 && d.y > 16 && d.y < 58) { toggleSfx(); return; }
     // 新手教程
-    if (x > 18 && x < 94 && y > 16 && y < 58) { openTutorial(); return; }
+    if (d.x > 18 && d.x < 94 && d.y > 16 && d.y < 58) { openTutorial(); return; }
     // 制作组
-    if (x > 104 && x < 196 && y > 16 && y < 58) { state = 'CREDITS'; return; }
+    if (d.x > 104 && d.x < 196 && d.y > 16 && d.y < 58) { state = 'CREDITS'; return; }
     // 退出登录
-    if (currentUser && x > VIEW_W / 2 - 50 && x < VIEW_W / 2 + 50 && y > 158 + titleY() && y < 188 + titleY()) { logoutAccount(); flashMsg(t('已退出登录')); return; }
+    if (currentUser && d.x > 480 - 50 && d.x < 480 + 50 && d.y > 158 && d.y < 188) { logoutAccount(); flashMsg(t('已退出登录')); return; }
     // 更衣室（左下角）
-    if (x > 18 && x < 168 && y > 452 + titleY() && y < 494 + titleY()) { state = 'WARDROBE'; return; }
-    if (x > 176 && x < 306 && y > 452 + titleY() && y < 494 + titleY()) { openMusicBox(); return; }
+    if (d.x > 18 && d.x < 168 && d.y > 452 && d.y < 494) { state = 'WARDROBE'; return; }
+    if (d.x > 176 && d.x < 306 && d.y > 452 && d.y < 494) { openMusicBox(); return; }
     // 篇章标签
-    const tcidx = chapterTabAt(x, y);
+    const tcidx = chapterTabAt(d.x, d.y);
     if (tcidx >= 0) { if (chapterUnlocked(tcidx)) chapterIndex = tcidx; return; }
     // 关卡按钮
     for (const b of levelButtons()) {
-      if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) {
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) {
         if (b.i + 1 <= maxUnlocked) startLevel(b.i);
         return;
       }
     }
     // 编辑器 / 我的关卡
     for (const b of titleEditorButtons()) {
-      if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) {
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) {
         if (b.id === 'editor') openEditor();
         else state = 'CUSTOM';
         return;
