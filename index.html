@@ -1,15 +1,13 @@
-<!doctype html>
-<html lang="en">
-<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Badball.HSgame</title>
 <link rel="icon" type="image/png" href="assets/images/favicon.png">
 <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #7ec8f7; overflow: hidden; overscroll-behavior: none; }
+  #wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: auto; background: #7ec8f7; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+</style>
 <link rel="stylesheet" href="style.css">
-</head>
-<body>
 <div id="wrap"><canvas id="game"></canvas></div>
 <script src="game.js"></script>
-</body>
-</html>

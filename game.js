@@ -11,7 +11,7 @@ const ctx = canvas.getContext('2d');
 // —— 逻辑分辨率 ——（宽固定 960，高随屏幕比例自适应，实现无黑边、不变形的全屏）
 const VIEW_W = 960;
 let VIEW_H = 540;
-const GAME_VERSION = '1.6';   // 游戏版本号
+const GAME_VERSION = '1.7';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
