@@ -1,4 +1,3 @@
-
-  html, body { margin: 0; padding: 0; height: 100%; background: #7ec8f7; overflow: hidden; overscroll-behavior: none; }
-  #wrap { position: fixed; inset: 0; }
-  canvas { display: block; width: 100vw; height: 100vh; image-rendering: auto; background: #7ec8f7; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #7ec8f7; overflow: hidden; overscroll-behavior: none; }
+#wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+canvas { display: block; width: 100%; height: 100%; image-rendering: auto; background: #7ec8f7; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
