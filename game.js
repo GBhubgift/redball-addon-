@@ -12,7 +12,7 @@ const ctx = canvas.getContext('2d');
 let VIEW_W = 960;
 let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
-const GAME_VERSION = '2.8';   // 游戏版本号
+const GAME_VERSION = '2.9';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -1980,7 +1980,7 @@ function closeSettings() { settingsOpen = false; settingsDrag = null; }
 function settingsBtn() {
   if (state === 'TITLE') return { x: 960 - 286, y: 30, w: 42, h: 42 };
   if (state === 'EDIT') return { x: 16, y: 8, w: 34, h: 34 };
-  if (state === 'PLAY') { const S = uiScale(); return { x: VIEW_W - 62 * S, y: HUD_TOP * S, w: 50 * S, h: 34 * S }; }
+  if (state === 'PLAY') { const S = hudScale(); return { x: VIEW_W - 62 * S, y: HUD_TOP * S, w: 50 * S, h: 34 * S }; }
   return { x: VIEW_W - 62, y: HUD_TOP, w: 50, h: 34 };
 }
 function settingsLayout() {
@@ -3247,6 +3247,8 @@ function camTargetY(ballY) {
 }
 // 主界面缩放：以 960×540 设计为基准，随窗口等比放大（保持比例，避免大屏下 UI 过小）
 function uiScale() { return Math.min(VIEW_W / 960, VIEW_H / 540); }
+// 关卡内 HUD 缩放：固定 2 倍放大（相对原始 960×540 设计）
+function hudScale() { return 2; }
 // 主界面设计区变换：把 960×540 设计坐标居中映射到屏幕（背景仍铺满全屏，仅 UI 居中缩放）
 function titleTransform() {
   const s = uiScale();
@@ -6011,7 +6013,7 @@ function drawBallSpeech() {
 
 function drawHUD() {
   ctx.save();
-  const S = uiScale();
+  const S = hudScale();
   ctx.scale(S, S);
   const T = HUD_TOP;       // 顶部安全边距基准线（设计空间，屏幕 = HUD_TOP*S）
   const R = VIEW_W / S;    // 右边缘（设计空间）
@@ -8027,7 +8029,7 @@ canvas.addEventListener('pointerdown', e => {
   }
   // 游戏内右上角退出按钮（随 HUD 一起缩放）
   if (state === 'PLAY') {
-    const S = uiScale();
+    const S = hudScale();
     if (x > VIEW_W - 156 * S && x < VIEW_W - 56 * S && y > HUD_TOP * S && y < (HUD_TOP + 34) * S) { sfx.click(); exitToTitle(); return; }
   }
   // 触控按钮：记录 pointerId 支持多点触控（左右 + 跳跃可同时按）
