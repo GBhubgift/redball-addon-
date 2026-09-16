@@ -12,7 +12,8 @@ const ctx = canvas.getContext('2d');
 const VIEW_W = 960;
 const VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
-const GAME_VERSION = '2.2';   // 游戏版本号
+const WORLD_TOP = 40;        // 游戏世界顶部留白：关卡内容从这条线以下才开始渲染，避免世界贴顶
+const GAME_VERSION = '2.3';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -3234,7 +3235,7 @@ function applyLevel(L) {
   wasInWater = false; rollCd = 0;
   lastGrounded = -1; lastJumpPress = -1;
   cam.x = clamp(ball.x - VIEW_W * 0.4, 0, Math.max(0, levelWidth() - VIEW_W));
-  cam.y = clamp(ball.y - VIEW_H * 0.55, 0, Math.max(0, mapH - VIEW_H));
+  cam.y = clamp(ball.y - VIEW_H * 0.55, 0, Math.max(0, mapH - VIEW_H + WORLD_TOP));
   particles = [];
   trail = [];
   jumpQueued = false;
@@ -4738,7 +4739,7 @@ function update(dt) {
   if (!(chase && chase.on)) {
     const targetX = clamp(ball.x - VIEW_W * 0.4, 0, Math.max(0, levelWidth() - VIEW_W));
     cam.x += (targetX - cam.x) * (1 - Math.exp(-6 * dt));
-    const targetY = clamp(ball.y - VIEW_H * 0.55, 0, Math.max(0, mapH - VIEW_H));
+    const targetY = clamp(ball.y - VIEW_H * 0.55, 0, Math.max(0, mapH - VIEW_H + WORLD_TOP));
     cam.y += (targetY - cam.y) * (1 - Math.exp(-6 * dt));
   }
 
@@ -6679,7 +6680,7 @@ function drawWorld() {
   ctx.save();
   let sx = 0, sy = 0;
   if (shake > 0.5) { sx = (Math.random() - 0.5) * shake; sy = (Math.random() - 0.5) * shake; }
-  ctx.translate(-Math.round(cam.x) + sx, -Math.round(cam.y) + sy);
+  ctx.translate(-Math.round(cam.x) + sx, -Math.round(cam.y) + sy + WORLD_TOP);
   for (const s of solids) drawSolid(s);
   for (const f of fakes) drawFake(f);
   for (const o of oneways) drawOneway(o);
