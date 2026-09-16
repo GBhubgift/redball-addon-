@@ -11,7 +11,7 @@ const ctx = canvas.getContext('2d');
 // —— 逻辑分辨率 ——（固定 960×540，等比缩放适配窗口，多余空间以背景色填充，保证完整 UI 永不裁切）
 const VIEW_W = 960;
 const VIEW_H = 540;
-const GAME_VERSION = '1.9';   // 游戏版本号
+const GAME_VERSION = '2.0';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -1980,7 +1980,7 @@ let settingsDrag = null;        // 正在拖动的滑块：'music' | 'sfx'
 function openSettings() { settingsOpen = true; settingsDrag = null; }
 function closeSettings() { settingsOpen = false; settingsDrag = null; }
 function settingsBtn() {
-  if (state === 'TITLE') return { x: VIEW_W - 286, y: 16, w: 42, h: 42 };
+  if (state === 'TITLE') return { x: VIEW_W - 286, y: 30, w: 42, h: 42 };
   if (state === 'EDIT') return { x: 16, y: 8, w: 34, h: 34 };
   return { x: VIEW_W - 62, y: 12, w: 50, h: 34 };
 }
@@ -6200,15 +6200,15 @@ function drawTitle() {
   for (const b of titleEditorButtons()) drawButton(b.x, b.y, b.w, b.h, t(b.label), b.color);
 
   // 语言切换
-  drawButton(VIEW_W - 232, 16, 86, 42, langName(LANG), 'rgba(0,0,0,.35)');
+  drawButton(VIEW_W - 232, 30, 86, 42, langName(LANG), 'rgba(0,0,0,.35)');
   // 音乐开关
-  drawButton(VIEW_W - 140, 16, 58, 42, musicMuted ? '🔇' : '🎵', 'rgba(0,0,0,.35)');
+  drawButton(VIEW_W - 140, 30, 58, 42, musicMuted ? '🔇' : '🎵', 'rgba(0,0,0,.35)');
   // 音效开关
-  drawButton(VIEW_W - 76, 16, 58, 42, sfxMuted ? '🔕' : '🔊', 'rgba(0,0,0,.35)');
+  drawButton(VIEW_W - 76, 30, 58, 42, sfxMuted ? '🔕' : '🔊', 'rgba(0,0,0,.35)');
   // 新手教程
-  drawButton(18, 16, 76, 42, t('🎓 教程'), 'rgba(0,0,0,.35)');
+  drawButton(18, 30, 76, 42, t('🎓 教程'), 'rgba(0,0,0,.35)');
   // 制作组
-  drawButton(104, 16, 92, 42, '👥 ' + t('制作组'), 'rgba(0,0,0,.35)');
+  drawButton(104, 30, 92, 42, '👥 ' + t('制作组'), 'rgba(0,0,0,.35)');
 }
 
 /* ============================ 更衣室 ============================ */
