@@ -13,7 +13,7 @@ let VIEW_W = 960;
 let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
-const GAME_VERSION = '2.11';  // 游戏版本号
+const GAME_VERSION = '2.12';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -7559,7 +7559,7 @@ function musicBoxPlay(i) {
   musicBoxCurrent = i;
   musicBoxAudio = new Audio(s.url);
   musicBoxAudio.loop = false;
-  musicBoxAudio.volume = musicMuted ? 0 : musicVol;
+  musicBoxAudio.volume = musicVol;   // 音乐盒是显式点播，只遵循音乐音量，不受全局「音乐开关」静音影响
   musicBoxAudio.play().catch(() => {});
 }
 function musicBoxStop() {
