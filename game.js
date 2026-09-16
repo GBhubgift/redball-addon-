@@ -11,7 +11,8 @@ const ctx = canvas.getContext('2d');
 // —— 逻辑分辨率 ——（固定 960×540，等比缩放适配窗口，多余空间以背景色填充，保证完整 UI 永不裁切）
 const VIEW_W = 960;
 const VIEW_H = 540;
-const GAME_VERSION = '2.1';   // 游戏版本号
+const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
+const GAME_VERSION = '2.2';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -1982,7 +1983,7 @@ function closeSettings() { settingsOpen = false; settingsDrag = null; }
 function settingsBtn() {
   if (state === 'TITLE') return { x: VIEW_W - 286, y: 30, w: 42, h: 42 };
   if (state === 'EDIT') return { x: 16, y: 8, w: 34, h: 34 };
-  return { x: VIEW_W - 62, y: 12, w: 50, h: 34 };
+  return { x: VIEW_W - 62, y: HUD_TOP, w: 50, h: 34 };
 }
 function settingsLayout() {
   const W = 400, H = 440, x = (VIEW_W - W) / 2, y = (VIEW_H - H) / 2;
@@ -5996,39 +5997,40 @@ function drawBallSpeech() {
 
 function drawHUD() {
   ctx.save();
+  const T = HUD_TOP;   // 顶部安全边距基准线，所有顶部 HUD 从这里向下排
   for (let i = 0; i < 3; i++) {
-    const x = 24 + i * 32, y = 26;
+    const x = 24 + i * 32, y = T + 14;
     drawHeart(x, y, i < hearts ? '#ff4d5a' : 'rgba(255,255,255,.25)');
   }
   if (god) {
     ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'left';
     ctx.fillStyle = '#ffd23e'; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 3;
-    ctx.strokeText(t('无敌'), 24, 52); ctx.fillText(t('无敌'), 24, 52);
+    ctx.strokeText(t('无敌'), 24, T + 40); ctx.fillText(t('无敌'), 24, T + 40);
   }
   if (fly) {
     ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'left';
     ctx.fillStyle = '#5ae1ff'; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 3;
-    const fy = god ? 70 : 52;
+    const fy = god ? T + 58 : T + 40;
     ctx.strokeText(t('飞行'), 24, fy); ctx.fillText(t('飞行'), 24, fy);
   }
-  ctx.fillStyle = '#ffd23e'; drawStar(VIEW_W - 160, 26, 13); ctx.fill();
+  ctx.fillStyle = '#ffd23e'; drawStar(VIEW_W - 160, T + 14, 13); ctx.fill();
   ctx.strokeStyle = '#e0a000'; ctx.lineWidth = 2; ctx.stroke();
   ctx.font = 'bold 22px system-ui, sans-serif'; ctx.fillStyle = '#fff';
   ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 3;
-  ctx.strokeText(`${starsGot}/${scoreboardTotal}`, VIEW_W - 138, 34);
-  ctx.fillText(`${starsGot}/${scoreboardTotal}`, VIEW_W - 138, 34);
+  ctx.strokeText(`${starsGot}/${scoreboardTotal}`, VIEW_W - 138, T + 22);
+  ctx.fillText(`${starsGot}/${scoreboardTotal}`, VIEW_W - 138, T + 22);
 
   ctx.font = 'bold 18px system-ui, sans-serif'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(255,255,255,.9)';
   ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 3;
   const lvName = playingCustom ? t(customDef.name) : levelName(levelIndex);
-  ctx.strokeText(lvName, VIEW_W / 2, 30);
-  ctx.fillText(lvName, VIEW_W / 2, 30);
+  ctx.strokeText(lvName, VIEW_W / 2, T + 18);
+  ctx.fillText(lvName, VIEW_W / 2, T + 18);
 
   // Boss 血条
   const boss = enemies.find(e => e.type === 'boss' && !e.dead);
   if (boss) {
-    const bw = 320, bx = VIEW_W / 2 - bw / 2, by = 46;
+    const bw = 320, bx = VIEW_W / 2 - bw / 2, by = T + 34;
     ctx.fillStyle = 'rgba(0,0,0,.5)'; roundRect(bx - 4, by - 4, bw + 8, 24, 6); ctx.fill();
     ctx.fillStyle = '#4a4a58'; roundRect(bx, by, bw, 16, 4); ctx.fill();
     ctx.fillStyle = '#ff4d5a'; roundRect(bx, by, bw * Math.max(0, boss.hp) / boss.maxHp, 16, 4); ctx.fill();
@@ -6036,7 +6038,7 @@ function drawHUD() {
     ctx.fillText(t(bossName(boss)), VIEW_W / 2, by + 13);
   }
   // 右上角退出按钮（M 键）
-  drawButton(VIEW_W - 156, 12, 100, 34, t('退出') + ' [M]', '#a33a3a');
+  drawButton(VIEW_W - 156, T, 100, 34, t('退出') + ' [M]', '#a33a3a');
   ctx.restore();
 }
 
