@@ -11,7 +11,7 @@ const ctx = canvas.getContext('2d');
 // —— 逻辑分辨率 ——（固定 960×540，等比缩放适配窗口，多余空间以背景色填充，保证完整 UI 永不裁切）
 const VIEW_W = 960;
 const VIEW_H = 540;
-const GAME_VERSION = '2.0';   // 游戏版本号
+const GAME_VERSION = '2.1';   // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -4812,13 +4812,13 @@ function spawnConfetti(x, y, n) { const cs = ['#ff5a5a', '#ffd23e', '#5ad1ff', '
 function drawBackground(t) {
   // 让画布外的留边（非 16:9 屏幕）沿用本关天空的渐变，像背景自然延伸出去（按钮/画面保持 16:9 不变）
   const bodyBg = {
-    grass: 'linear-gradient(180deg, #7ec8f7 0%, #cdeeff 70%, #eaf7ff 100%)',
+    grass: 'linear-gradient(180deg, #7ec8f7 0%, #cdeeff 70%, #bfe4ff 100%)',
     forest: 'linear-gradient(180deg, #2f5d3a 0%, #3f7d50 60%, #27432f 100%)',
     cave: 'linear-gradient(180deg, #10101c 0%, #232034 60%, #342a44 100%)',
     canyon: 'linear-gradient(180deg, #2a0f2e 0%, #8a2a3a 45%, #e2703a 75%, #ffce6a 100%)',
     mine: 'linear-gradient(180deg, #0e0a16 0%, #1c1426 55%, #2e2138 100%)',
     space: 'linear-gradient(180deg, #05060f 0%, #0c1026 60%, #1a1440 100%)',
-  }[t] || 'linear-gradient(180deg, #7ec8f7 0%, #cdeeff 70%, #eaf7ff 100%)';
+  }[t] || 'linear-gradient(180deg, #7ec8f7 0%, #cdeeff 70%, #bfe4ff 100%)';
   (document.body || canvas).style.background = bodyBg;
   if (t === 'forest') {
     const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
@@ -4953,7 +4953,7 @@ function drawBackground(t) {
     drawShootingStars(time);
   } else {
     const g = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-    g.addColorStop(0, '#7ec8f7'); g.addColorStop(0.7, '#cdeeff'); g.addColorStop(1, '#eaf7ff');
+    g.addColorStop(0, '#7ec8f7'); g.addColorStop(0.7, '#cdeeff'); g.addColorStop(1, '#bfe4ff');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.arc(820 - cam.x * 0.03, 90, 46, 0, 7); ctx.fill();
     ctx.fillStyle = 'rgba(255,243,176,.4)'; ctx.beginPath(); ctx.arc(820 - cam.x * 0.03, 90, 64, 0, 7); ctx.fill();
