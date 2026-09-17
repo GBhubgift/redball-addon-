@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.15';  // 游戏版本号
+const GAME_VERSION = '2.16';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -803,6 +803,8 @@ const I18N_ROWS = [
   ['可选', 'optional', 'facultatif', '任意', 'optional'],
   ['编辑器已解锁', 'Editor unlocked', 'Éditeur débloqué', 'エディター解放済み', 'Editor freigeschaltet'],
   ['编辑器与全部关卡已解锁', 'Editor & all levels unlocked', 'Éditeur et tous les niveaux débloqués', 'エディターと全ステージ解放済み', 'Editor und alle Level freigeschaltet'],
+  ['全部解锁成功', 'All unlocked', 'Tout débloqué', 'すべて解放しました', 'Alles freigeschaltet'],
+  ['兑换码错误，请重新输入', 'Wrong code, please re-enter', 'Code incorrect, veuillez ressaisir', 'コードが違います。もう一度入力してください', 'Falscher Code, bitte erneut eingeben'],
   ['注册 / 登录账号 · 输入兑换码', 'Register / login · enter redeem code', 'Inscription / connexion · entrer le code', '登録 / ログイン · コード入力', 'Registrieren / anmelden · Code eingeben'],
   ['输入兑换码', 'Enter redeem code', 'Entrer le code', 'コードを入力', 'Code eingeben'],
   ['小学学生', 'Student', 'Élève', '小学生', 'Schüler'],
@@ -1295,20 +1297,24 @@ function registerAccount() {
   const u = loginUser.trim();
   if (u.length < 2) { flashMsg(t('用户名至少 2 个字符')); return; }
   if (accounts[u]) { flashMsg(t('用户名已存在')); return; }
+  const codeInput = loginCode.trim();
+  if (codeInput && codeInput !== REDEEM_CODE) { flashMsg(t('兑换码错误，请重新输入')); return; }  // 输错兑换码：不注册，可重输
   accounts[u] = {}; saveAccounts();
   currentUser = u; saveCurrentUser();
   loadUserData(u);
   const codeOk = redeemCode();
-  flashMsg(codeOk ? (t('注册成功：') + u + ' · ' + t('编辑器与全部关卡已解锁')) : (t('注册成功：') + u));
+  flashMsg(codeOk ? (t('注册成功：') + u + ' · ' + t('全部解锁成功')) : (t('注册成功：') + u));
   enterGame();
 }
 function loginAccount() {
   const u = loginUser.trim();
   if (!accounts[u]) { flashMsg(t('用户名不存在')); return; }
+  const codeInput = loginCode.trim();
+  if (codeInput && codeInput !== REDEEM_CODE) { flashMsg(t('兑换码错误，请重新输入')); return; }  // 输错兑换码：不登录，可重输
   currentUser = u; saveCurrentUser();
   loadUserData(u);
   const codeOk = redeemCode();
-  flashMsg(codeOk ? (t('欢迎回来：') + u + ' · ' + t('编辑器与全部关卡已解锁')) : (t('欢迎回来：') + u));
+  flashMsg(codeOk ? (t('欢迎回来：') + u + ' · ' + t('全部解锁成功')) : (t('欢迎回来：') + u));
   enterGame();
 }
 function logoutAccount() { saveUserData(); resetPlayerData(); currentUser = null; saveCurrentUser(); }
@@ -6438,6 +6444,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.16', text: '兑换码解锁增加成功提示，输错可重新输入' },
   { v: '2.15', text: '兑换码 HS2693@# 同时解锁全部关卡（unlockall）' },
   { v: '2.14', text: '修复更新日志标题与首条文字重叠' },
   { v: '2.13', text: '更衣室/教程界面 1.5 倍放大居中；制作组页可滚动并加入更新日志' },
@@ -7244,16 +7251,20 @@ function editorAction(id) {
 }
 function openEditor() {
   if (editorUnlocked) { goLoadScreen('title'); return; }
-  const code = (prompt(t('请输入兑换码解锁编辑器：')) || '').trim();
-  if (code === REDEEM_CODE) {
-    editorUnlocked = true;
-    maxUnlocked = LEVELS.length;   // 兑换码同时解锁全部关卡
-    try { localStorage.setItem('rb_editor_unlocked', '1'); localStorage.setItem('rb_unlocked', String(maxUnlocked)); } catch (e) {}
-    saveUserData();
-    flashMsg(t('编辑器与全部关卡已解锁'));
-    goLoadScreen('title');
-  } else {
-    flashMsg(t('兑换码错误'));
+  // 兑换码解锁：输错会提示并可重新输入，直到正确或取消
+  for (;;) {
+    const code = (prompt(t('请输入兑换码解锁编辑器：')) || '').trim();
+    if (!code) return;                      // 取消
+    if (code === REDEEM_CODE) {
+      editorUnlocked = true;
+      maxUnlocked = LEVELS.length;   // 兑换码同时解锁全部关卡
+      try { localStorage.setItem('rb_editor_unlocked', '1'); localStorage.setItem('rb_unlocked', String(maxUnlocked)); } catch (e) {}
+      saveUserData();
+      alert(t('全部解锁成功'));            // 明确的成功提示
+      goLoadScreen('title');
+      return;
+    }
+    alert(t('兑换码错误，请重新输入'));     // 输错提示，可重新输入
   }
 }
 function goLoadScreen(from) { loadFrom = from; state = 'LOAD'; }
