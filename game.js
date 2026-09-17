@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.13';  // 游戏版本号
+const GAME_VERSION = '2.14';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -6431,6 +6431,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.14', text: '修复更新日志标题与首条文字重叠' },
   { v: '2.13', text: '更衣室/教程界面 1.5 倍放大居中；制作组页可滚动并加入更新日志' },
   { v: '2.12', text: '音乐盒不再被全局音乐静音开关影响（点 ▶ 正常出声）' },
   { v: '2.11', text: '关卡世界缩放改为 1.5 倍' },
@@ -6453,7 +6454,7 @@ const CHANGELOG = [
 let creditsScroll = 0;
 // 制作组页可滚动内容的最大滚动量（职位区固定高度 + 更新日志 N 行）
 function creditsMaxScroll() {
-  return Math.max(0, (CHANGELOG.length - 1) * 26 - 166);
+  return Math.max(0, (CHANGELOG.length - 1) * 26 - 120);
 }
 function drawCredits() {
   drawBackground('space');
@@ -6498,7 +6499,7 @@ function drawCredits() {
   ctx.textAlign = 'center';
   ctx.font = '900 22px system-ui, sans-serif'; ctx.fillStyle = '#9fd0ff';
   ctx.fillText('📋 更新日志', VIEW_W / 2, y);
-  y += 8;
+  y += 24;
   for (const c of CHANGELOG) {
     ctx.font = 'bold 14px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
     ctx.textAlign = 'right';
