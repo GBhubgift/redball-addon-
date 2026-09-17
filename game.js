@@ -13,7 +13,9 @@ let VIEW_W = 960;
 let VIEW_H = 540;
 const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元素从这条基准线向下布局，避免贴边/被裁
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
-const GAME_VERSION = '2.12';  // 游戏版本号
+const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
+const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
+const GAME_VERSION = '2.13';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -3261,6 +3263,16 @@ function toDesign(x, y) {
   const tr = titleTransform();
   return { x: (x - tr.ox) / tr.s, y: (y - tr.oy) / tr.s };
 }
+// 更衣室设计区变换：把 960×540 设计坐标居中映射到屏幕，固定 1.5 倍放大（放不下则缩到能完整显示）
+function wardrobeTransform() {
+  const s = Math.min(WARDROBE_ZOOM, VIEW_W / 960, VIEW_H / 540);
+  return { s, ox: (VIEW_W - 960 * s) / 2, oy: (VIEW_H - 540 * s) / 2 };
+}
+// 屏幕坐标 → 更衣室设计坐标（供点击命中测试用）
+function wardrobeToDesign(x, y) {
+  const tr = wardrobeTransform();
+  return { x: (x - tr.ox) / tr.s, y: (y - tr.oy) / tr.s };
+}
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -6282,13 +6294,18 @@ function drawBallSwatch(r) {
 }
 function drawWardrobe() {
   drawBackground('grass');
+  const tr = wardrobeTransform();
+  ctx.save();
+  ctx.translate(tr.ox, tr.oy);
+  ctx.scale(tr.s, tr.s);
+
   drawButton(18, 16, 92, 42, t('← 返回'), 'rgba(0,0,0,.35)');
 
   ctx.textAlign = 'center';
   ctx.font = '900 34px system-ui, sans-serif'; ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#7a3fd0'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
-  ctx.strokeText(t('更衣室'), VIEW_W / 2, 48);
-  ctx.fillText(t('更衣室'), VIEW_W / 2, 48);
+  ctx.strokeText(t('更衣室'), 480, 48);
+  ctx.fillText(t('更衣室'), 480, 48);
 
   // 左下角大预览
   const sk = SKINS[skinIndex];
@@ -6407,18 +6424,56 @@ function drawWardrobe() {
       ctx.restore();
     }
   }
+
+  ctx.restore();
 }
 
 /* ============================ 制作组名单 ============================ */
+// 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
+const CHANGELOG = [
+  { v: '2.13', text: '更衣室/教程界面 1.5 倍放大居中；制作组页可滚动并加入更新日志' },
+  { v: '2.12', text: '音乐盒不再被全局音乐静音开关影响（点 ▶ 正常出声）' },
+  { v: '2.11', text: '关卡世界缩放改为 1.5 倍' },
+  { v: '2.10', text: '关卡世界整体放大（地形/球/敌人）' },
+  { v: '2.9', text: '关卡内 HUD 固定 2 倍放大' },
+  { v: '2.8', text: '关卡内 HUD 放大' },
+  { v: '2.7', text: '关卡内 HUD 恢复原尺寸' },
+  { v: '2.6', text: '关卡内 HUD 与主界面等比缩放' },
+  { v: '2.5', text: '主界面随窗口等比缩放，不再过小' },
+  { v: '2.4', text: '响应式视口：画面铺满窗口无黑边' },
+  { v: '2.3', text: '关卡顶部预留天空条' },
+  { v: '2.2', text: '关卡内 HUD 顶部安全边距' },
+  { v: '2.1', text: '草地天空底部改为浅蓝' },
+  { v: '2.0', text: '主界面顶部按钮下移防遮挡' },
+  { v: '1.3', text: '修复游戏崩溃（重置函数重名）' },
+  { v: '1.2', text: '修复切换账号串档问题' },
+  { v: '1.1', text: '版本号升级' },
+  { v: '1.0', text: '每个账号独立存档' },
+];
+let creditsScroll = 0;
+// 制作组页可滚动内容的最大滚动量（职位区固定高度 + 更新日志 N 行）
+function creditsMaxScroll() {
+  return Math.max(0, (CHANGELOG.length - 1) * 26 - 166);
+}
 function drawCredits() {
   drawBackground('space');
   drawPanel(560, 560);
+  creditsScroll = clamp(creditsScroll, 0, creditsMaxScroll());
+
+  // 固定标题
   ctx.textAlign = 'center';
   ctx.font = '900 40px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
   ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 5; ctx.lineJoin = 'round';
-  ctx.strokeText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 220);
-  ctx.fillText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 220);
+  ctx.strokeText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 232);
+  ctx.fillText(t('制作组'), VIEW_W / 2, VIEW_H / 2 - 232);
 
+  // 可滚动内容区（职位名单 + 更新日志）
+  const top = VIEW_H / 2 - 176, bottom = VIEW_H / 2 + 204;
+  ctx.save();
+  roundRect(VIEW_W / 2 - 262, top, 524, bottom - top, 12);
+  ctx.clip();
+
+  let y = top + 8 - creditsScroll;
   const rows = [
     [t('游戏开发'), 'DeSe'],
     [t('音乐'), 'Sol & Zayne'],
@@ -6427,19 +6482,40 @@ function drawCredits() {
     [t('吉祥物'), 'Hamsger'],
     [t('支持与改进'), 'zgl'],
   ];
-  let y = VIEW_H / 2 - 130;
   for (const [role, name] of rows) {
-    ctx.font = 'bold 22px system-ui, sans-serif';
+    ctx.font = 'bold 17px system-ui, sans-serif';
     ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,.82)';
-    ctx.fillText(role + ':', VIEW_W / 2 - 24, y);
-    ctx.textAlign = 'left'; ctx.fillStyle = '#ffd23e'; ctx.font = '900 28px system-ui, sans-serif';
-    ctx.fillText(name, VIEW_W / 2 + 6, y);
-    y += 44;
+    ctx.fillText(role + ':', VIEW_W / 2 - 22, y);
+    ctx.textAlign = 'left'; ctx.fillStyle = '#ffd23e'; ctx.font = '900 22px system-ui, sans-serif';
+    ctx.fillText(name, VIEW_W / 2 + 4, y);
+    y += 30;
   }
+  // 分隔线 + 更新日志标题
+  y += 10;
+  ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(VIEW_W / 2 - 210, y); ctx.lineTo(VIEW_W / 2 + 210, y); ctx.stroke();
+  y += 26;
   ctx.textAlign = 'center';
-  ctx.font = 'bold 16px system-ui, sans-serif'; ctx.fillStyle = '#9fd0ff';
-  ctx.fillText('🌐 Hamsger-redball-addon.com', VIEW_W / 2, VIEW_H / 2 + 150);
-  drawButton(VIEW_W / 2 - 110, VIEW_H / 2 + 172, 220, 50, t('← 返回'), '#556');
+  ctx.font = '900 22px system-ui, sans-serif'; ctx.fillStyle = '#9fd0ff';
+  ctx.fillText('📋 更新日志', VIEW_W / 2, y);
+  y += 8;
+  for (const c of CHANGELOG) {
+    ctx.font = 'bold 14px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
+    ctx.textAlign = 'right';
+    ctx.fillText('v' + c.v, VIEW_W / 2 - 26, y);
+    ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.font = '14px system-ui, sans-serif';
+    ctx.fillText(c.text, VIEW_W / 2 - 14, y);
+    y += 26;
+  }
+  ctx.restore();
+
+  // 滚动箭头（右侧）
+  if (creditsScroll > 0) drawButton(VIEW_W / 2 + 226, top + 6, 40, 28, '▲', '#4a4a5a');
+  if (creditsScroll < creditsMaxScroll()) drawButton(VIEW_W / 2 + 226, bottom - 34, 40, 28, '▼', '#4a4a5a');
+
+  ctx.font = 'bold 14px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.fillText('🌐 Hamsger-redball-addon.com', VIEW_W / 2, VIEW_H / 2 + 226);
+  drawButton(VIEW_W / 2 - 110, VIEW_H / 2 + 242, 220, 36, t('← 返回'), '#556');
 }
 
 function themeColor(i) {
@@ -6771,6 +6847,10 @@ function drawWorld() {
 function drawNarrative(st, btn) {
   if (state === 'ENDING') drawBackground('grass');
   else drawBackground(theme);
+  ctx.save();
+  ctx.translate(VIEW_W / 2, VIEW_H / 2);
+  ctx.scale(TUTORIAL_ZOOM, TUTORIAL_ZOOM);
+  ctx.translate(-VIEW_W / 2, -VIEW_H / 2);
   drawPanel(600, 400);
   ctx.textAlign = 'center';
   ctx.font = '900 34px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
@@ -6787,6 +6867,7 @@ function drawNarrative(st, btn) {
   drawButton(VIEW_W / 2 - 120, VIEW_H / 2 + 100, 240, 54, btn, pulse ? '#4f9e42' : '#3f8a34');
   ctx.font = '14px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.55)';
   ctx.fillText(t('按 空格 / 回车 继续'), VIEW_W / 2, VIEW_H / 2 + 178);
+  ctx.restore();
   if (state === 'STORY') drawButton(VIEW_W - 124, 12, 64, 34, t('退出'), '#a33a3a');
 }
 
@@ -7937,18 +8018,19 @@ canvas.addEventListener('pointerdown', e => {
     return;
   }
   if (state === 'WARDROBE') {
-    if (x > 18 && x < 110 && y > 16 && y < 58) { wardrobeOutro(); state = 'TITLE'; saveProgress(); return; }
+    const d = wardrobeToDesign(x, y);
+    if (d.x > 18 && d.x < 110 && d.y > 16 && d.y < 58) { wardrobeOutro(); state = 'TITLE'; saveProgress(); return; }
     for (const b of wardrobeColorBtns()) {
-      if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) { skinIndex = b.i; playMotif(['hero','funny','cool','mysterious'][b.i % 4]); saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { skinIndex = b.i; playMotif(['hero','funny','cool','mysterious'][b.i % 4]); saveProgress(); return; }
     }
     for (const b of wardrobeHatBtns()) {
-      if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) { hatIndex = b.idx; saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { hatIndex = b.idx; saveProgress(); return; }
     }
     for (const b of wardrobeClothesBtns()) {
-      if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) { clothesIndex = b.idx; saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { clothesIndex = b.idx; saveProgress(); return; }
     }
     for (const b of wardrobeGlassesBtns()) {
-      if (x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h) { glassesIndex = b.idx; saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { glassesIndex = b.idx; saveProgress(); return; }
     }
     return;
   }
@@ -7966,7 +8048,12 @@ canvas.addEventListener('pointerdown', e => {
     return;
   }
   if (state === 'CREDITS') {
-    if (x > VIEW_W / 2 - 110 && x < VIEW_W / 2 + 110 && y > VIEW_H / 2 + 172 && y < VIEW_H / 2 + 222) { state = 'TITLE'; return; }
+    const top = VIEW_H / 2 - 176, bottom = VIEW_H / 2 + 204;
+    if (x > VIEW_W / 2 + 226 && x < VIEW_W / 2 + 266) {
+      if (y > top + 6 && y < top + 34) { if (creditsScroll > 0) creditsScroll--; return; }
+      if (y > bottom - 34 && y < bottom - 6) { if (creditsScroll < creditsMaxScroll()) creditsScroll++; return; }
+    }
+    if (x > VIEW_W / 2 - 110 && x < VIEW_W / 2 + 110 && y > VIEW_H / 2 + 242 && y < VIEW_H / 2 + 278) { state = 'TITLE'; return; }
     return;
   }
   if (state === 'COMPLETE') {
@@ -8107,6 +8194,11 @@ canvas.addEventListener('pointerleave', e => {
 });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('wheel', e => {
+  if (state === 'CREDITS') {
+    e.preventDefault();
+    creditsScroll = clamp(creditsScroll + (e.deltaY || e.deltaX) * 0.5, 0, creditsMaxScroll());
+    return;
+  }
   if (state !== 'EDIT') return;
   const L = editorLayout();
   if (L.maxCam <= 0) return;
