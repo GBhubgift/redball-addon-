@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.18';  // 游戏版本号
+const GAME_VERSION = '2.19';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -502,7 +502,8 @@ let shake = 0;             // 震屏强度（Boss 砸地等）
 let lava = [];             // 熔岩 {x,y,w,h}（接触=受伤，机械臂 Boss 场）
 let conveyorBoost = 1;     // 压路机 Boss 传送带加速系数（随时间递增）
 let chase = null;          // 方块博士阶段三追逐状态 {on,x,speed,t,doctorX,endX}
-let beams = [];            // 方块博士激光束 {y,warn,life,dead}（警告线→水平光束，需跳起躲避）
+let beams = [];            // 方块博士激光束（已删除激光攻击，字段保留避免报错）
+let missiles = [];         // 玩家飞弹（追逐阶段发射，最多 3 发）
 
 /* ============================ 地形编辑器 ============================ */
 const EDIT_COLS = 200, EDIT_ROWS = 22;
@@ -1017,6 +1018,12 @@ const I18N_ROWS = [
   ['Boss：熔岩机械臂！踩按钮冻住机械臂，再跳上核心攻击！', 'Boss: Lava Claw! Step on the buttons to freeze its arms, then stomp the core!', 'Boss : Griffe de Lave ! Geler les bras puis écrasez le noyau !', 'ボス：ラヴァクロー！ボタンでアームを凍らせ、コアを踏め！', 'Boss: Lavakralle! Friere die Arme ein, dann spring auf den Kern!'],
   ['Boss：机械蜘蛛！直接踩头击杀，小心它召唤的小蜘蛛！', 'Boss: Spider-8! Stomp its head, but watch out for the spiderlings!', 'Boss : Araignée-8 ! Écrasez sa tête, mais attention aux bébés araignées !', 'ボス：スパイダー8！頭を踏んで倒せ、召喚される子グモに注意！', 'Boss: Spinne-8! Spring auf seinen Kopf, aber achte auf die Spinnen!'],
   ['最终Boss：方块博士！躲开导弹，等核心暴露时踩它！', 'Final Boss: Dr. Square! Dodge the missiles and stomp the core when exposed!', 'Boss final : Dr. Carré ! Esquivez les missiles et écrasez le noyau exposé !', '最終ボス：ドクター・スクエア！ミサイルを避け、コア露出時に踏め！', 'Endboss: Dr. Quadrat! Weiche Raketen aus und spring auf den Kern, wenn er freiliegt!'],
+  ['距离', 'Distance', 'Distance', '距離', 'Distanz'],
+  ['米', 'm', 'm', 'm', 'm'],
+  ['发射飞弹追上博士！', 'Fire missiles to catch Dr. Square!', 'Tirez des missiles pour rattraper Dr. Carré !', 'ミサイルで博士を追え！', 'Feuere Raketen ab, um Dr. Quadrat zu erwischen!'],
+  ['命中博士！', 'Hit Dr. Square!', 'Dr. Carré touché !', '博士に命中！', 'Dr. Quadrat getroffen!'],
+  ['飞弹已用完', 'No missiles left', 'Plus de missiles', 'ミサイル切れ', 'Keine Raketen mehr'],
+  ['按 X 发射飞弹', 'Press X to fire missiles', 'Appuyez sur X pour tirer', 'Xでミサイル発射', 'X zum Abfeuern der Raketen'],
   // 新 Boss 剧情（第 2~5 章终章）
   ['森林终章 · 钢铁压路机', 'Forest Finale · Iron Crusher', 'Finale de la forêt · Rouleau de Fer', '森の最終章 · アイアンクラッシャー', 'Wald-Finale · Eisenwalze'],
   ['钢铁压路机现身了！', 'The Iron Crusher appears!', 'Le Rouleau de Fer apparaît !', 'アイアンクラッシャーが現れた！', 'Die Eisenwalze erscheint!'],
@@ -3233,6 +3240,7 @@ function applyLevel(L) {
   pitSolids = [];
   projectiles = [];
   beams = [];
+  missiles = [];
   lava = L.lava || [];
   conveyorBoost = 1;
   chase = null;
@@ -4361,14 +4369,6 @@ function updateBossSquare(e, dt) {
       sfx.summon();
     }
   }
-  // 激光：警告线 → 横向光束（需跳起躲避）
-  if (e.cd4 === undefined) e.cd4 = 3.5;
-  e.cd4 -= dt;
-  if (e.cd4 <= 0) {
-    e.cd4 = phase >= 2 ? 3.0 : 4.5;
-    beams.push({ y: mapH - 90, warn: 0.55, life: 0.95, dead: false });
-    sfx.summon();
-  }
   // 阶段二起地面加速
   conveyorBoost = phase >= 2 ? Math.min(2, conveyorBoost + dt * 0.05) : 1;
 }
@@ -4415,38 +4415,73 @@ function drawLava(lv, t) {
 }
 
 /* —— 方块博士追逐序列 —— */
+// 宇宙终章：博士逃跑，玩家自由移动追逐（不锁摄像机），可发射 3 枚飞弹；无论追不追上都是成功结局
 function startChase() {
-  chase = { on: true, speed: 300, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, endX: levelWidth() - (VIEW_W / WORLD_ZOOM) * 0.25, spawnT: 0.6 };
+  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorVX: 340, missilesLeft: 3, duration: 9 };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
-  flashMsg(t('追上去！别被甩掉！'));
+  missiles = [];
+  conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
+  flashMsg(t('发射飞弹追上博士！'));
 }
 function updateChase(dt) {
   if (!chase || !chase.on) return;
   chase.t += dt;
-  const maxCam = Math.max(0, levelWidth() - VIEW_W / WORLD_ZOOM);
-  cam.x += chase.speed * dt;
-  if (cam.x >= maxCam) { cam.x = maxCam; chase.on = false; sfx.win(); winLevel(); return; }
-  chase.doctorX = cam.x + (VIEW_W / WORLD_ZOOM) * 0.62 + Math.sin(chase.t * 5) * 16;   // 钉在镜头前方，轻微左右摆动
-  if (ball.x < cam.x - 40) { ball.x = cam.x + 90; ball.vy = -200; }   // 被甩出左屏：前推（不掉血）
-  chase.spawnT -= dt;
-  if (chase.spawnT <= 0) {
-    chase.spawnT = 0.7;
-    if (Math.random() < 0.55) gears.push({ x: cam.x + VIEW_W / WORLD_ZOOM + 40, y: -40, r: 26, angle: 0, spin: 3, vy: 0, life: 3, dead: false });
-    else projectiles.push({ x: cam.x + VIEW_W / WORLD_ZOOM + 40, y: mapH - 200, vx: -330, vy: 0, r: 9, life: 5, dead: false });
+  chase.doctorX += chase.doctorVX * dt;   // 博士向右逃跑
+  if (chase.t >= chase.duration || chase.doctorX >= levelWidth() - 140) { chase.on = false; sfx.win(); winLevel(); return; }  // 无论追不追上，到点必成功
+  updateMissiles(dt);
+}
+function fireMissile() {
+  if (!chase || !chase.on) return;
+  if (chase.missilesLeft <= 0) { flashMsg(t('飞弹已用完')); return; }
+  chase.missilesLeft--;
+  const tx = chase.doctorX, ty = ball.y - 40;
+  const dx = tx - ball.x, dy = ty - ball.y, d = Math.hypot(dx, dy) || 1;
+  missiles.push({ x: ball.x, y: ball.y - 16, vx: dx / d * 640, vy: dy / d * 640, r: 6, life: 2.2, dead: false });
+  sfx.summon();
+}
+function updateMissiles(dt) {
+  for (const m of missiles) {
+    if (m.dead) continue;
+    m.life -= dt;
+    m.x += m.vx * dt; m.y += m.vy * dt;
+    if (m.life <= 0 || (chase && Math.abs(m.x - chase.doctorX) < 44)) {
+      m.dead = true;
+      spawnPuff(m.x, m.y, 16); shake = Math.max(shake, 7);
+      flashMsg(t('命中博士！'));
+    }
   }
+  missiles = missiles.filter(m => !m.dead);
+}
+function drawMissile(m, time) {
+  if (m.dead) return;
+  ctx.save();
+  ctx.shadowColor = '#ff8a3d'; ctx.shadowBlur = 12;
+  ctx.fillStyle = '#ffd23e';
+  ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(m.x - 2, m.y - 2, 2.2, 0, 7); ctx.fill();
+  ctx.restore();
 }
 function drawChase() {
   if (!chase || !chase.on) return;
   ctx.save();
-  // 逃窜的小黑方块博士
+  // 逃窜的小黑方块博士（锁定屏幕中部高度，水平随世界位置移动）
   const dx = (chase.doctorX - cam.x) * WORLD_ZOOM;
-  ctx.fillStyle = '#000'; roundRect(dx - 16, VIEW_H * 0.62 - 16, 32, 32, 5); ctx.fill();
+  const dy = VIEW_H * 0.5;
+  ctx.fillStyle = '#000'; roundRect(dx - 16, dy - 16, 32, 32, 5); ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(dx - 5, VIEW_H * 0.62 - 6, 3, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.arc(dx + 5, VIEW_H * 0.62 - 6, 3, 0, 7); ctx.fill();
-  ctx.fillStyle = '#ffd23e';
-  ctx.font = 'bold 22px system-ui, sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText(t('别被甩掉！'), VIEW_W / 2, 120);
+  ctx.beginPath(); ctx.arc(dx - 5, dy - 6, 3, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(dx + 5, dy - 6, 3, 0, 7); ctx.fill();
+  // 距离提示（1 米 = 40 像素 ≈ 一格）
+  const meters = Math.max(0, Math.round((chase.doctorX - ball.x) / 40));
+  ctx.font = '900 26px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+  ctx.fillStyle = '#ffd23e'; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineWidth = 5;
+  const distTxt = t('距离') + '：' + meters + ' ' + t('米');
+  ctx.strokeText(distTxt, VIEW_W / 2, 92);
+  ctx.fillText(distTxt, VIEW_W / 2, 92);
+  // 剩余飞弹
+  ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.lineWidth = 0;
+  ctx.fillText('🚀 × ' + chase.missilesLeft + '  ' + t('按 X 发射飞弹'), VIEW_W / 2, 126);
   ctx.restore();
 }
 
@@ -4577,7 +4612,6 @@ function update(dt) {
   updateExplosives(dt);
   updateKeys();
   updateLava(dt);
-  updateBeams(dt);
   // Boss 意外死亡（如掉虚空）也直接胜利
   if (state === 'PLAY') {
     const boss = enemies.find(e => e.type === 'boss');
@@ -4776,14 +4810,12 @@ function update(dt) {
   // 旗子
   if (flag && ball.x > flag.x - 8 && Math.abs(ball.y - flag.y) < 170) winLevel();
 
-  // 相机（方块博士追逐阶段由 updateChase 强制右滚，这里跳过跟随）
+  // 相机跟随球（追逐阶段也不锁摄像机，自由移动）
   shake = Math.max(0, shake - dt * 40);
-  if (!(chase && chase.on)) {
-    const targetX = clamp(ball.x - (VIEW_W / WORLD_ZOOM) * 0.4, 0, Math.max(0, levelWidth() - VIEW_W / WORLD_ZOOM));
-    cam.x += (targetX - cam.x) * (1 - Math.exp(-6 * dt));
-    const targetY = camTargetY(ball.y);
-    cam.y += (targetY - cam.y) * (1 - Math.exp(-6 * dt));
-  }
+  const targetX = clamp(ball.x - (VIEW_W / WORLD_ZOOM) * 0.4, 0, Math.max(0, levelWidth() - VIEW_W / WORLD_ZOOM));
+  cam.x += (targetX - cam.x) * (1 - Math.exp(-6 * dt));
+  const targetY = camTargetY(ball.y);
+  cam.y += (targetY - cam.y) * (1 - Math.exp(-6 * dt));
 
   // 拖尾
   if (Math.abs(ball.vx) > 130 || Math.abs(ball.vy) > 320) {
@@ -6444,6 +6476,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.19', text: '宇宙终章：追逐不锁视角、显示距离、可发射 3 枚飞弹、删除激光，追不追上都是成功结局' },
   { v: '2.18', text: '学生模式（German Mills）默认解锁全部关卡' },
   { v: '2.17', text: '退出登录后回到登录界面（修复无法重新登录）' },
   { v: '2.16', text: '兑换码解锁增加成功提示，输错可重新输入' },
@@ -6840,7 +6873,7 @@ function drawWorld() {
   for (const b of boxes) drawBox(b);
   for (const e of enemies) drawEnemy(e, time);
   for (const p of projectiles) drawProjectile(p, time);
-  for (const b of beams) drawBeam(b, time);
+  for (const m of missiles) drawMissile(m, time);
   for (const t of trail) {
     const a = (t.life / t.max) * 0.32;
     const tg = ctx.createRadialGradient(t.x, t.y, 3, t.x, t.y, t.r);
@@ -7918,6 +7951,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'i' || e.key === 'I') { settingsOpen = !settingsOpen; settingsDrag = null; }   // I 键开关设置
   if (e.key === 'q' || e.key === 'Q') { mouseShown = !mouseShown; applyCursor(); }   // Q 键显示/隐藏鼠标
   if (e.key === 'f' || e.key === 'F') { toggleFullscreen(); }   // F 键切换全屏
+  if (e.key === 'x' || e.key === 'X' || e.key === 'k' || e.key === 'K') { fireMissile(); }   // X/K 发射飞弹（追逐阶段）
   if (state === 'TITLE' && (e.code === 'Space' || e.code === 'Enter')) startLevel(0);
 });
 document.addEventListener('keyup', e => {
