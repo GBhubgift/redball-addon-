@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.17';  // 游戏版本号
+const GAME_VERSION = '2.18';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -6444,6 +6444,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.18', text: '学生模式（German Mills）默认解锁全部关卡' },
   { v: '2.17', text: '退出登录后回到登录界面（修复无法重新登录）' },
   { v: '2.16', text: '兑换码解锁增加成功提示，输错可重新输入' },
   { v: '2.15', text: '兑换码 HS2693@# 同时解锁全部关卡（unlockall）' },
@@ -7592,7 +7593,7 @@ function drawInputBox(x, y, w, h, text, focused) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
 }
 function loginAs(id) {
-  if (id === 'student') { isStudent = true; noSave = true; editorUnlocked = true; }
+  if (id === 'student') { isStudent = true; noSave = true; editorUnlocked = true; maxUnlocked = LEVELS.length; }  // 学生模式（German Mills）默认解锁全部关卡
   else { isStudent = false; noSave = false; }
   if (!tutorialSeen) state = 'TUTORIAL';
   else state = 'TITLE';
