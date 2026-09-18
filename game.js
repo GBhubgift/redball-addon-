@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.16';  // 游戏版本号
+const GAME_VERSION = '2.17';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -1317,7 +1317,7 @@ function loginAccount() {
   flashMsg(codeOk ? (t('欢迎回来：') + u + ' · ' + t('全部解锁成功')) : (t('欢迎回来：') + u));
   enterGame();
 }
-function logoutAccount() { saveUserData(); resetPlayerData(); currentUser = null; saveCurrentUser(); }
+function logoutAccount() { saveUserData(); resetPlayerData(); currentUser = null; saveCurrentUser(); state = 'LOGIN'; }  // 退出登录后回到登录界面（否则留在标题页无法重新登录）
 
 // 进入前：已登录则直接进标题（保持登录，除非 logout），否则选身份登录
 state = (currentUser) ? 'TITLE' : 'LOGIN';
@@ -6444,6 +6444,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.17', text: '退出登录后回到登录界面（修复无法重新登录）' },
   { v: '2.16', text: '兑换码解锁增加成功提示，输错可重新输入' },
   { v: '2.15', text: '兑换码 HS2693@# 同时解锁全部关卡（unlockall）' },
   { v: '2.14', text: '修复更新日志标题与首条文字重叠' },
