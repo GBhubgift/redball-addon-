@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.19';  // 游戏版本号
+const GAME_VERSION = '2.20';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -504,6 +504,7 @@ let conveyorBoost = 1;     // 压路机 Boss 传送带加速系数（随时间�
 let chase = null;          // 方块博士阶段三追逐状态 {on,x,speed,t,doctorX,endX}
 let beams = [];            // 方块博士激光束（已删除激光攻击，字段保留避免报错）
 let missiles = [];         // 玩家飞弹（追逐阶段发射，最多 3 发）
+let endingGood = true;     // 结局好坏：true=打肿博士（光明重现），false=博士逃走（黑暗降临）
 
 /* ============================ 地形编辑器 ============================ */
 const EDIT_COLS = 200, EDIT_ROWS = 22;
@@ -681,6 +682,11 @@ const ENDING = { title: '结局 · 光明重现', lines: [
   '红球战胜了魔王！',
   '太阳重新升起，星星回到天上，世界恢复了颜色。',
   '而红球的冒险，才刚刚开始……',
+] };
+const BAD_ENDING = { title: '结局 · 黑暗降临', lines: [
+  '你没能打肿方块博士……',
+  '博士带着太阳逃进了宇宙深处。',
+  '世界失去了颜色，等待下一次的挑战……',
 ] };
 const TUTORIAL = { title: '🎓 新手教程', lines: [
   '← → 或 A / D：左右滚动',
@@ -933,6 +939,11 @@ const I18N_ROWS = [
   ['红球战胜了魔王！', 'The red ball has defeated the Demon Lord!', 'La bille rouge a vaincu le Seigneur Démon !', 'レッドボールは魔王を倒した！', 'Der rote Ball hat den Dämonenlord besiegt!'],
   ['太阳重新升起，星星回到天上，世界恢复了颜色。', 'The sun rises again, the stars return to the sky, and the world regains its color.', 'Le soleil se lève à nouveau, les étoiles reviennent au ciel et le monde retrouve ses couleurs.', '太陽は再び昇り、星は空に戻り、世界は色を取り戻した。', 'Die Sonne geht wieder auf, die Sterne kehren an den Himmel zurück, und die Welt gewinnt ihre Farbe wieder.'],
   ['而红球的冒险，才刚刚开始……', 'And the red ball\'s adventure has only just begun…', 'Et l\'aventure de la bille rouge ne fait que commencer…', 'そしてレッドボールの冒険は、まだ始まったばかり……', 'Und das Abenteuer des roten Balls hat gerade erst begonnen…'],
+  ['结局 · 黑暗降临', 'Ending · Darkness Falls', 'Fin · Les ténèbres tombent', '結末 · 闇の到来', 'Ende · Dunkelheit bricht herein'],
+  ['你没能打肿方块博士……', 'You failed to bruise Dr. Square…', 'Vous n\'avez pas réussi à blesser Dr. Carré…', '博士を打ち負かせなかった……', 'Du hast Dr. Quadrat nicht besiegt…'],
+  ['博士带着太阳逃进了宇宙深处。', 'Dr. Square fled into deep space with the sun.', 'Dr. Carré s\'est enfui dans l\'espace profond avec le soleil.', '博士は太陽を連れて宇宙の彼方へ逃げた。', 'Dr. Quadrat floh mit der Sonne ins tiefe All.'],
+  ['世界失去了颜色，等待下一次的挑战……', 'The world lost its color, awaiting the next challenge…', 'Le monde a perdu ses couleurs, en attendant le prochain défi…', '世界は色を失い、次の挑戦を待つ……', 'Die Welt verlor ihre Farbe und wartet auf die nächste Herausforderung…'],
+  ['命中', 'Hits', 'Coups', '命中', 'Treffer'],
   // 教程
   ['🎓 新手教程', '🎓 Tutorial', '🎓 Tutoriel', '🎓 チュートリアル', '🎓 Tutorial'],
   ['← → 或 A / D：左右滚动', '← → or A / D: roll left and right', '← → ou A / D : rouler à gauche et à droite', '← → または A / D：左右に転がる', '← → oder A / D: nach links und rechts rollen'],
@@ -4417,7 +4428,7 @@ function drawLava(lv, t) {
 /* —— 方块博士追逐序列 —— */
 // 宇宙终章：博士逃跑，玩家自由移动追逐（不锁摄像机），可发射 3 枚飞弹；无论追不追上都是成功结局
 function startChase() {
-  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorVX: 340, missilesLeft: 3, duration: 9 };
+  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorVX: 340, missilesLeft: 3, hits: 0, swell: 0, duration: 12 };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   missiles = [];
   conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
@@ -4427,8 +4438,9 @@ function updateChase(dt) {
   if (!chase || !chase.on) return;
   chase.t += dt;
   chase.doctorX += chase.doctorVX * dt;   // 博士向右逃跑
-  if (chase.t >= chase.duration || chase.doctorX >= levelWidth() - 140) { chase.on = false; sfx.win(); winLevel(); return; }  // 无论追不追上，到点必成功
   updateMissiles(dt);
+  if (chase.hits >= 3) { chase.on = false; sfx.win(); winLevel(); return; }  // 打肿（命中 3 次）→ 成功结局
+  if (chase.t >= chase.duration || chase.doctorX >= levelWidth() - 140) { chase.on = false; endFail(); return; }  // 没打肿就逃走/超时 → 失败结局
 }
 function fireMissile() {
   if (!chase || !chase.on) return;
@@ -4444,14 +4456,18 @@ function updateMissiles(dt) {
     if (m.dead) continue;
     m.life -= dt;
     m.x += m.vx * dt; m.y += m.vy * dt;
-    if (m.life <= 0 || (chase && Math.abs(m.x - chase.doctorX) < 44)) {
+    if (m.life <= 0) { m.dead = true; continue; }
+    if (chase && Math.abs(m.x - chase.doctorX) < 44) {
       m.dead = true;
+      chase.hits++;
+      chase.swell = chase.hits;   // 打肿程度（每中一次更肿）
       spawnPuff(m.x, m.y, 16); shake = Math.max(shake, 7);
-      flashMsg(t('命中博士！'));
+      flashMsg(t('命中博士！') + '（' + chase.hits + '/3）');
     }
   }
   missiles = missiles.filter(m => !m.dead);
 }
+function endFail() { endingGood = false; state = 'ENDING'; sfx.over(); }  // 失败结局：博士带着太阳逃走
 function drawMissile(m, time) {
   if (m.dead) return;
   ctx.save();
@@ -4465,13 +4481,16 @@ function drawMissile(m, time) {
 function drawChase() {
   if (!chase || !chase.on) return;
   ctx.save();
-  // 逃窜的小黑方块博士（锁定屏幕中部高度，水平随世界位置移动）
+  // 逃窜的小黑方块博士（越打越肿、越红；锁定屏幕中部高度，水平随世界位置移动）
   const dx = (chase.doctorX - cam.x) * WORLD_ZOOM;
   const dy = VIEW_H * 0.5;
-  ctx.fillStyle = '#000'; roundRect(dx - 16, dy - 16, 32, 32, 5); ctx.fill();
+  const swell = chase.swell || 0;
+  const size = 32 + swell * 14;
+  const color = ['#000', '#4a0f14', '#6e141b', '#8f1a24'][swell] || '#8f1a24';
+  ctx.fillStyle = color; roundRect(dx - size / 2, dy - size / 2, size, size, 6); ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(dx - 5, dy - 6, 3, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.arc(dx + 5, dy - 6, 3, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(dx - size * 0.16, dy - size * 0.2, 3 + swell, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(dx + size * 0.16, dy - size * 0.2, 3 + swell, 0, 7); ctx.fill();
   // 距离提示（1 米 = 40 像素 ≈ 一格）
   const meters = Math.max(0, Math.round((chase.doctorX - ball.x) / 40));
   ctx.font = '900 26px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
@@ -4479,9 +4498,10 @@ function drawChase() {
   const distTxt = t('距离') + '：' + meters + ' ' + t('米');
   ctx.strokeText(distTxt, VIEW_W / 2, 92);
   ctx.fillText(distTxt, VIEW_W / 2, 92);
-  // 剩余飞弹
+  // 命中进度 + 剩余飞弹
   ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.lineWidth = 0;
-  ctx.fillText('🚀 × ' + chase.missilesLeft + '  ' + t('按 X 发射飞弹'), VIEW_W / 2, 126);
+  ctx.fillText(t('命中') + ' ' + chase.hits + '/3   🚀 × ' + chase.missilesLeft, VIEW_W / 2, 126);
+  ctx.fillText(t('按 X 发射飞弹'), VIEW_W / 2, 152);
   ctx.restore();
 }
 
@@ -4861,6 +4881,7 @@ function winLevel() {
   saveProgress();
   sfx.win();
   if (levelIndex === LEVELS.length - 1) {
+    endingGood = true;         // 好结局：打肿博士，光明重现
     state = 'ENDING';          // 击败魔王 → 结局剧情
     spawnConfetti(ball.x, ball.y, 60);
   } else {
@@ -6476,6 +6497,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.20', text: '宇宙终章：命中 3 次飞弹打肿博士才成功，否则失败结局（黑暗降临）' },
   { v: '2.19', text: '宇宙终章：追逐不锁视角、显示距离、可发射 3 枚飞弹、删除激光，追不追上都是成功结局' },
   { v: '2.18', text: '学生模式（German Mills）默认解锁全部关卡' },
   { v: '2.17', text: '退出登录后回到登录界面（修复无法重新登录）' },
@@ -6896,7 +6918,7 @@ function drawWorld() {
 }
 
 function drawNarrative(st, btn) {
-  if (state === 'ENDING') drawBackground('grass');
+  if (state === 'ENDING') drawBackground(endingGood ? 'grass' : 'space');
   else drawBackground(theme);
   ctx.save();
   ctx.translate(VIEW_W / 2, VIEW_H / 2);
@@ -7743,7 +7765,7 @@ function render() {
   else if (state === 'COMPLETE') drawComplete();
   else if (state === 'GAMEOVER') drawGameOver();
   else if (state === 'STORY') drawNarrative(story, t('开始冒险'));
-  else if (state === 'ENDING') drawNarrative(ENDING, t('回到标题'));
+  else if (state === 'ENDING') drawNarrative(endingGood ? ENDING : BAD_ENDING, t('回到标题'));
   else if (state === 'TUTORIAL') drawNarrative(TUTORIAL, t('开始游戏'));
   else if (state === 'EDIT') drawEditor();
   else if (state === 'CUSTOM') drawCustomList();
