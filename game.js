@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.21';  // 游戏版本号
+const GAME_VERSION = '2.22';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -945,6 +945,7 @@ const I18N_ROWS = [
   ['世界失去了颜色，等待下一次的挑战……', 'The world lost its color, awaiting the next challenge…', 'Le monde a perdu ses couleurs, en attendant le prochain défi…', '世界は色を失い、次の挑戦を待つ……', 'Die Welt verlor ihre Farbe und wartet auf die nächste Herausforderung…'],
   ['命中', 'Hits', 'Coups', '命中', 'Treffer'],
   ['移动鼠标瞄准 · 按 X 发射（自动瞄准）', 'Move mouse to aim · press X to fire (auto-aim)', 'Bougez la souris pour viser · X pour tirer (visée auto)', 'マウスで狙い · X で発射（自動照準）', 'Maus bewegen zum Zielen · X zum Abfeuern (Auto-Ziel)'],
+  ['打肿博士！', 'You bruised Dr. Square!', 'Dr. Carré est KO !', '博士を打ち負かした！', 'Dr. Quadrat ist erledigt!'],
   // 教程
   ['🎓 新手教程', '🎓 Tutorial', '🎓 Tutoriel', '🎓 チュートリアル', '🎓 Tutorial'],
   ['← → 或 A / D：左右滚动', '← → or A / D: roll left and right', '← → ou A / D : rouler à gauche et à droite', '← → または A / D：左右に転がる', '← → oder A / D: nach links und rechts rollen'],
@@ -4429,7 +4430,9 @@ function drawLava(lv, t) {
 /* —— 方块博士追逐序列 —— */
 // 宇宙终章：博士逃跑，玩家自由移动追逐（不锁摄像机），可发射 3 枚飞弹；无论追不追上都是成功结局
 function startChase() {
-  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 340, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false };
+  const obs = [];
+  for (let i = 0; i < 6; i++) obs.push({ x: ball.x + 700 + i * 750, y: ball.y + 22, r: 22, spin: i * 1.3 });
+  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 340, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0 };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   missiles = [];
   conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
@@ -4438,11 +4441,44 @@ function startChase() {
 function updateChase(dt) {
   if (!chase || !chase.on) return;
   chase.t += dt;
+  // 打肿后：博士被击飞，旋转翻滚飞出屏幕（过渡），然后进入成功结局
+  if (chase.ending) {
+    chase.endT += dt;
+    chase.doctorX += chase.knockVX * dt;
+    chase.doctorY += chase.knockVY * dt;
+    chase.knockVY += 520 * dt;          // 重力：抛物线飞出
+    chase.spin += dt * 10;
+    if (Math.random() < dt * 18) spawnPuff(chase.doctorX, chase.doctorY, 2);   // 飞出去拖尾
+    updateChaseObstacles(dt);
+    if (chase.endT >= 1.3) { chase.on = false; winLevel(); }
+    return;
+  }
   chase.doctorX += chase.doctorVX * dt;   // 博士向右逃跑
   if (!chase.aiming) { chase.aimX = chase.doctorX; chase.aimY = chase.doctorY; }  // 自动瞄准：未手动瞄准时，准星自动锁定博士
   updateMissiles(dt);
-  if (chase.hits >= 3) { chase.on = false; sfx.win(); winLevel(); return; }  // 打肿（命中 3 次）→ 成功结局
+  updateChaseObstacles(dt);
+  if (chase.hits >= 3) {   // 打肿（命中 3 次）→ 飞出去过渡
+    chase.ending = true; chase.endT = 0; chase.spin = 0;
+    chase.knockVX = 600; chase.knockVY = -440;
+    flashMsg(t('打肿博士！'));
+    return;
+  }
   if (chase.t >= chase.duration || chase.doctorX >= levelWidth() - 140) { chase.on = false; endFail(); return; }  // 没打肿就逃走/超时 → 失败结局
+}
+function updateChaseObstacles(dt) {
+  if (!chase || !chase.obstacles) return;
+  for (const o of chase.obstacles) {
+    o.spin += dt * 3;
+    if (chase.ending || ball.inv > 0) continue;
+    // 障碍物：轻碰一下把球往后弹（不掉血，一点点难度）
+    if (Math.abs(ball.x - o.x) < o.r + 12 && Math.abs(ball.y - o.y) < o.r + 12) {
+      ball.inv = 0.7;
+      ball.vx = -180;
+      ball.vy = -120;
+      sfx.hurt();
+      spawnPuff(ball.x, ball.y, 10);
+    }
+  }
 }
 function fireMissile() {
   if (!chase || !chase.on) return;
@@ -4493,29 +4529,58 @@ function drawMissile(m, time) {
 function drawChase() {
   if (!chase || !chase.on) return;
   ctx.save();
-  // 逃窜的小黑方块博士（越打越肿、越红；世界坐标绘制，跟随相机）
+  // 障碍物（一点点：旋转的尖刺小行星，碰到会轻轻往后弹）
+  if (chase.obstacles) {
+    for (const o of chase.obstacles) {
+      const ox = (o.x - cam.x) * WORLD_ZOOM;
+      const oy = (o.y - cam.y) * WORLD_ZOOM;
+      ctx.save();
+      ctx.translate(ox, oy);
+      ctx.rotate(o.spin);
+      ctx.fillStyle = '#7a5f9e';
+      ctx.shadowColor = 'rgba(150,120,210,.6)'; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = k * Math.PI / 4;
+        const rr = (k % 2 === 0) ? o.r : o.r * 0.5;
+        const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#3a2c55'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+  }
+  // 逃窜的小黑方块博士（越打越肿、越红；被击飞时旋转翻滚飞出）
   const dx = (chase.doctorX - cam.x) * WORLD_ZOOM;
   const dy = (chase.doctorY - cam.y) * WORLD_ZOOM;
   const swell = chase.swell || 0;
   const size = 32 + swell * 14;
   const color = ['#000', '#4a0f14', '#6e141b', '#8f1a24'][swell] || '#8f1a24';
-  ctx.fillStyle = color; roundRect(dx - size / 2, dy - size / 2, size, size, 6); ctx.fill();
+  ctx.save();
+  ctx.translate(dx, dy);
+  if (chase.ending) ctx.rotate(chase.spin);   // 飞出去过渡：旋转翻滚
+  ctx.fillStyle = color; roundRect(-size / 2, -size / 2, size, size, 6); ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(dx - size * 0.16, dy - size * 0.2, 3 + swell, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.arc(dx + size * 0.16, dy - size * 0.2, 3 + swell, 0, 7); ctx.fill();
-  // 瞄准准星（自动锁定博士；移动鼠标/手指可自行选择目标）
-  const ax = (chase.aimX - cam.x) * WORLD_ZOOM;
-  const ay = (chase.aimY - cam.y) * WORLD_ZOOM;
-  ctx.strokeStyle = chase.aiming ? '#ffd23e' : 'rgba(255,210,62,.8)';
-  ctx.lineWidth = 3; ctx.shadowColor = 'rgba(255,140,40,.85)'; ctx.shadowBlur = 8;
-  ctx.beginPath(); ctx.arc(ax, ay, 16, 0, 7); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(ax - 26, ay); ctx.lineTo(ax - 10, ay);
-  ctx.moveTo(ax + 10, ay); ctx.lineTo(ax + 26, ay);
-  ctx.moveTo(ax, ay - 26); ctx.lineTo(ax, ay - 10);
-  ctx.moveTo(ax, ay + 10); ctx.lineTo(ax, ay + 26);
-  ctx.stroke();
-  ctx.shadowBlur = 0;
+  ctx.beginPath(); ctx.arc(-size * 0.16, -size * 0.2, 3 + swell, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(size * 0.16, -size * 0.2, 3 + swell, 0, 7); ctx.fill();
+  ctx.restore();
+  // 瞄准准星（自动锁定博士；移动鼠标/手指可自行选择目标；飞出去时隐藏）
+  if (!chase.ending) {
+    const ax = (chase.aimX - cam.x) * WORLD_ZOOM;
+    const ay = (chase.aimY - cam.y) * WORLD_ZOOM;
+    ctx.strokeStyle = chase.aiming ? '#ffd23e' : 'rgba(255,210,62,.8)';
+    ctx.lineWidth = 3; ctx.shadowColor = 'rgba(255,140,40,.85)'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(ax, ay, 16, 0, 7); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ax - 26, ay); ctx.lineTo(ax - 10, ay);
+    ctx.moveTo(ax + 10, ay); ctx.lineTo(ax + 26, ay);
+    ctx.moveTo(ax, ay - 26); ctx.lineTo(ax, ay - 10);
+    ctx.moveTo(ax, ay + 10); ctx.lineTo(ax, ay + 26);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
   // 距离提示（1 米 = 40 像素 ≈ 一格）
   const meters = Math.max(0, Math.round((chase.doctorX - ball.x) / 40));
   ctx.font = '900 26px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
@@ -4526,7 +4591,7 @@ function drawChase() {
   // 命中进度 + 剩余飞弹
   ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.lineWidth = 0;
   ctx.fillText(t('命中') + ' ' + chase.hits + '/3   🚀 × ' + chase.missilesLeft, VIEW_W / 2, 126);
-  ctx.fillText(t('移动鼠标瞄准 · 按 X 发射（自动瞄准）'), VIEW_W / 2, 152);
+  ctx.fillText(chase.ending ? t('打肿博士！') : t('移动鼠标瞄准 · 按 X 发射（自动瞄准）'), VIEW_W / 2, 152);
   ctx.restore();
 }
 
@@ -6522,6 +6587,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.22', text: '宇宙终章：追逐增加少量障碍物 + 打肿后博士飞出去过渡' },
   { v: '2.21', text: '宇宙终章：可自行瞄准目标（准星）+ 自动瞄准追踪 + 子弹碰撞箱加大' },
   { v: '2.20', text: '宇宙终章：命中 3 次飞弹打肿博士才成功，否则失败结局（黑暗降临）' },
   { v: '2.19', text: '宇宙终章：追逐不锁视角、显示距离、可发射 3 枚飞弹、删除激光，追不追上都是成功结局' },
