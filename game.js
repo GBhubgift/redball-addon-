@@ -15,11 +15,13 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.24';  // 游戏版本号
+const GAME_VERSION = '2.25';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
 try { const q = localStorage.getItem('rb_quality'); if (QUALITY_SCALE[q]) quality = q; } catch (e) {}
+let difficulty = 'normal';
+try { const d = localStorage.getItem('rb_difficulty'); if (d === 'easy' || d === 'hard') difficulty = d; } catch (e) {}
 function applyQuality() {
   const s = QUALITY_SCALE[quality] || 3;
   canvas.width = VIEW_W * s;
@@ -450,6 +452,31 @@ let noSave = false;          // 为 true 时只跳过「进度」写入（解锁
 let levelIndex = 0;
 let chapterIndex = 0;       // 标题/选关界面当前选中的篇章（0=草原 1=森林 2=峡谷 3=矿井 4=宇宙）
 let hearts = 3;
+const DIFFICULTIES = [
+  { id: 'easy',   label: '简单', lives: 5, damage: 0.5 },
+  { id: 'normal', label: '普通', lives: 4, damage: 1 },
+  { id: 'hard',   label: '困难', lives: 3, damage: 1.5 },
+];
+function diffCfg() {
+  return difficulty === 'easy' ? DIFFICULTIES[0]
+    : difficulty === 'hard' ? DIFFICULTIES[2]
+    : DIFFICULTIES[1];
+}
+function aimCfg() {
+  // 瞄准难度：简单→追踪最快、子弹碰撞箱最大；困难→追踪慢、碰撞箱最小
+  return difficulty === 'easy' ? { turn: 8, hitHalf: 120 }
+    : difficulty === 'hard' ? { turn: 2.5, hitHalf: 60 }
+    : { turn: 6, hitHalf: 100 };
+}
+function resetHearts() { hearts = diffCfg().lives; }
+function setDifficulty(d) {
+  if (!DIFFICULTIES.some(x => x.id === d)) d = 'normal';
+  difficulty = d;
+  try { localStorage.setItem('rb_difficulty', d); } catch (e) {}
+  hearts = diffCfg().lives;
+  sfx.click();
+  flashMsg(t('难度') + ': ' + t(diffCfg().label));
+}
 let god = false;            // 按 U 切换无敌（作弊/调试）
 let fly = false;            // 按 G 切换飞行（开挂：无视重力与碰撞，方向键上下左右飞行）
 let flyTrail = 0;           // 飞行拖尾粒子节流
@@ -1078,6 +1105,11 @@ const I18N_ROWS = [
   ['中', 'Medium', 'Moyen', '中', 'Mittel'],
   ['高', 'High', 'Haut', '高', 'Hoch'],
   ['超高', 'Ultra', 'Ultra', '超高', 'Ultra'],
+  ['难度', 'Difficulty', 'Difficulté', '難易度', 'Schwierigkeit'],
+  ['简单', 'Easy', 'Facile', 'かんたん', 'Leicht'],
+  ['普通', 'Normal', 'Normal', 'ふつう', 'Normal'],
+  ['困难', 'Hard', 'Difficile', 'むずかしい', 'Schwer'],
+  ['伤害', 'Damage', 'Dégâts', 'ダメージ', 'Schaden'],
   ['滚动跳跃 · 收集星星 · 75 关冒险 · 五大篇章 · 击败魔王', 'Roll · Jump · Collect stars · 75 levels · Five chapters · Defeat the Demon Lord', 'Rouler · Sauter · Ramasser les étoiles · 75 niveaux · Cinq chapitres · Vaincre le Seigneur Démon', '転がる・跳ぶ・星を集める・75关の冒険・5つの編・魔王を倒す', 'Rollen · Springen · Sterne sammeln · 75 Level · Fünf Kapitel · Besiege den Dämonenlord'],
   ['皮肤：', 'Skin: ', 'Peau : ', 'スキン：', 'Skin: '],
   ['← → 或 A D 移动 · ↑/空格/W 跳跃 · R 重开 · M 菜单 · I 设置 · Q 鼠标 · F 全屏 · U 无敌 · G 飞行', '← → or A D move · ↑/Space/W jump · R restart · M menu · I settings · Q cursor · F fullscreen · U invincible · G fly', '← → ou A D se déplacer · ↑/Espace/W sauter · R recommencer · M menu · I réglages · Q curseur · F plein écran · U invincible · G voler', '← → / A D 移動 · ↑/スペース/W ジャンプ · R リスタート · M メニュー · I 設定 · Q カーソル · F 全画面 · U 無敵 · G 飛行', '← → oder A D bewegen · ↑/Leertaste/W springen · R neu · M Menü · I Einstellungen · Q Cursor · F Vollbild · U unbesiegbar · G fliegen'],
@@ -2022,26 +2054,28 @@ function settingsBtn() {
   return { x: VIEW_W - 62, y: HUD_TOP, w: 50, h: 34 };
 }
 function settingsLayout() {
-  const W = 400, H = 440, x = (VIEW_W - W) / 2, y = (VIEW_H - H) / 2;
+  const W = 400, H = 500, x = (VIEW_W - W) / 2, y = (VIEW_H - H) / 2;
   const rows = [
-    { key: 'music', label: t('音乐'), y: y + 92, on: !musicMuted, vol: musicVol },
-    { key: 'sfx',   label: t('音效'), y: y + 144, on: !sfxMuted,  vol: sfxVol },
+    { key: 'music', label: t('音乐'), y: y + 158, on: !musicMuted, vol: musicVol },
+    { key: 'sfx',   label: t('音效'), y: y + 210, on: !sfxMuted,  vol: sfxVol },
   ];
   const qopts = ['low', 'medium', 'high', 'ultra'];
   const qlabels = [t('低'), t('中'), t('高'), t('超高')];
   const qbw = 56, qgap = 5, qx0 = x + 126;
-  const qualityBtns = qopts.map((q, i) => ({ q, x: qx0 + i * (qbw + qgap), y: y + 194, w: qbw, h: 30, label: qlabels[i] }));
+  const qualityBtns = qopts.map((q, i) => ({ q, x: qx0 + i * (qbw + qgap), y: y + 256, w: qbw, h: 30, label: qlabels[i] }));
   const cbw = 40, cgap = 4, cx0 = x + 126;
-  const cursorBtns = CURSOR_SKINS.map((s, i) => ({ skin: i, x: cx0 + i * (cbw + cgap), y: y + 244, w: cbw, h: 34, label: s.icon }));
+  const cursorBtns = CURSOR_SKINS.map((s, i) => ({ skin: i, x: cx0 + i * (cbw + cgap), y: y + 306, w: cbw, h: 34, label: s.icon }));
+  const dbw = 84, dgap = 5, dx0 = x + 126;
+  const diffBtns = DIFFICULTIES.map((d, i) => ({ d: d.id, x: dx0 + i * (dbw + dgap), y: y + 80, w: dbw, h: 34, label: t(d.label) }));
   return {
-    W, H, x, y, rows, qualityBtns, qualityLabelY: y + 209, cursorBtns, cursorLabelY: y + 258,
+    W, H, x, y, rows, qualityBtns, qualityLabelY: y + 271, cursorBtns, cursorLabelY: y + 321, diffBtns, diffLabelY: y + 97, diffHintY: y + 124,
     close: { x: x + W - 44, y: y + 14, w: 30, h: 30 },
     toggle: (r) => ({ x: x + 54, y: r.y - 16, w: 88, h: 32 }),
     track:  (r) => ({ x: x + 158, y: r.y - 4, w: 190, h: 8 }),
-    reset:  { x: x + 18, y: y + 360, w: 116, h: 44 },
-    resetProgress: { x: x + 142, y: y + 360, w: 116, h: 44 },
-    fullscreen: { x: x + 266, y: y + 360, w: 116, h: 44 },
-    oldMusic: { x: x + 46, y: y + 300, w: 308, h: 40 },
+    reset:  { x: x + 18, y: y + 420, w: 116, h: 44 },
+    resetProgress: { x: x + 142, y: y + 420, w: 116, h: 44 },
+    fullscreen: { x: x + 266, y: y + 420, w: 116, h: 44 },
+    oldMusic: { x: x + 46, y: y + 356, w: 308, h: 40 },
   };
 }
 function setMusicVolume(v) {
@@ -2065,7 +2099,10 @@ function resetSettings() {
   try {
     localStorage.setItem('rb_music', '0'); localStorage.setItem('rb_sfx', '0');
     localStorage.setItem('rb_music_vol', '1'); localStorage.setItem('rb_sfx_vol', '1');
+    localStorage.setItem('rb_difficulty', 'normal');
   } catch (e) {}
+  difficulty = 'normal';
+  hearts = diffCfg().lives;
   applyMusicVol();
   if (!musicMuted && musicActiveState()) startMusic();
   setQuality('high');
@@ -2097,6 +2134,13 @@ function drawSettings() {
   ctx.fillStyle = '#fff'; ctx.font = 'bold 24px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(t('设置'), L.x + L.W / 2, L.y + 40);
   drawButton(L.close.x, L.close.y, L.close.w, L.close.h, '✕', '#c0392b');
+  // 难度
+  ctx.textAlign = 'left'; ctx.font = 'bold 19px system-ui, sans-serif'; ctx.fillStyle = '#fff';
+  ctx.fillText(t('难度'), L.x + 46, L.diffLabelY);
+  for (const b of L.diffBtns) drawButton(b.x, b.y, b.w, b.h, b.label, b.d === difficulty ? '#3f8a34' : '#4a4a5a');
+  const dc = diffCfg();
+  ctx.font = '13px system-ui, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.fillText('❤×' + dc.lives + '  ·  ' + t('伤害') + ' ' + dc.damage, L.x + 126, L.diffHintY);
   for (const r of L.rows) {
     ctx.textAlign = 'left'; ctx.font = 'bold 19px system-ui, sans-serif';
     ctx.fillText(r.label, L.x + 46, r.y);
@@ -4434,7 +4478,8 @@ function drawLava(lv, t) {
 function startChase() {
   const obs = [];
   for (let i = 0; i < 6; i++) obs.push({ x: ball.x + 700 + i * 750, y: ball.y + 22, r: 22, spin: i * 1.3 });
-  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0 };
+  const aim = aimCfg();
+  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0, turn: aim.turn, hitHalf: aim.hitHalf };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   missiles = [];
   conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
@@ -4509,14 +4554,15 @@ function updateMissiles(dt) {
       const tx = chase.doctorX, ty = chase.doctorY;   // 自动瞄准：飞弹始终追踪博士
       const dx = tx - m.x, dy = ty - m.y, d = Math.hypot(dx, dy) || 1;
       const sp = Math.hypot(m.vx, m.vy) || 640;
-      const k = 1 - Math.exp(-6 * dt);
+      const k = 1 - Math.exp(-(chase.turn || 6) * dt);   // 追踪速度随难度：简单快、困难慢
       m.vx += (dx / d * sp - m.vx) * k;
       m.vy += (dy / d * sp - m.vy) * k;
     }
     m.x += m.vx * dt; m.y += m.vy * dt;
     if (m.life <= 0) { m.dead = true; continue; }
-    // 子弹碰撞箱很大：博士周围 ±100 像素（约 2.5 格）都算命中
-    if (chase && Math.abs(m.x - chase.doctorX) < 100 && Math.abs(m.y - chase.doctorY) < 100) {
+    // 子弹碰撞箱很大：博士周围 hitHalf 像素都算命中（简单模式更大、困难模式更小）
+    const hh = chase.hitHalf || 100;
+    if (chase && Math.abs(m.x - chase.doctorX) < hh && Math.abs(m.y - chase.doctorY) < hh) {
       m.dead = true;
       chase.hits++;
       chase.swell = chase.hits;   // 打肿程度（每中一次更肿）
@@ -4957,9 +5003,9 @@ function levelWidth() {
 function hurt(noRespawnFx) {
   if (god) return;          // 无敌模式：不掉血（飞行模式不无敌，照常受伤）
   if (ball.inv > 0) return;
-  hearts--;
+  hearts -= diffCfg().damage;   // 小怪伤害按难度：0.5 / 1 / 1.5
   sfx.hurt();
-  if (hearts < 0) { gameOver(); return; }
+  if (hearts <= 0) { gameOver(); return; }
   spawnPuff(ball.x, ball.y, 12);
   const L = buildLevel(currentLevelDef());
   const rp = respawn || L.spawn;   // 优先在最近的复活点重生
@@ -6199,9 +6245,20 @@ function drawHUD() {
   const T = HUD_TOP;       // 顶部安全边距基准线（设计空间，屏幕 = HUD_TOP*S）
   const R = VIEW_W / S;    // 右边缘（设计空间）
   const C = R / 2;         // 水平中心
-  for (let i = 0; i < 3; i++) {
+  const mx = diffCfg().lives;
+  for (let i = 0; i < mx; i++) {
     const x = 24 + i * 32, y = T + 14;
-    drawHeart(x, y, i < hearts ? '#ff4d5a' : 'rgba(255,255,255,.25)');
+    const fill = hearts - i;   // 该格剩余血量（0..1）
+    if (fill >= 1) drawHeart(x, y, '#ff4d5a');
+    else if (fill <= 0) drawHeart(x, y, 'rgba(255,255,255,.25)');
+    else {
+      // 半颗心：左半边红、右半边空（简单模式 0.5 伤害会出现）
+      drawHeart(x, y, 'rgba(255,255,255,.25)');
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x - 10, y - 12, 10, 24); ctx.clip();
+      drawHeart(x, y, '#ff4d5a');
+      ctx.restore();
+    }
   }
   if (god) {
     ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'left';
@@ -6598,6 +6655,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.25', text: '新增简单/普通/困难三档难度：命数 5/4/3、小怪伤害 0.5/1/1.5、瞄准简单/普通/困难' },
   { v: '2.24', text: '宇宙终章：全自动瞄准（飞弹始终追踪博士），不再需要手动瞄准' },
   { v: '2.23', text: '宇宙终章：博士跑慢一点 + 可跳上头顶踩它（也算命中）' },
   { v: '2.22', text: '宇宙终章：追逐增加少量障碍物 + 打肿后博士飞出去过渡' },
@@ -7327,7 +7385,7 @@ function playEdit() {
   } else {
     saveEditDraft();
   }
-  hearts = 3;
+  resetHearts();
   loadCustom({ name: '自定义关卡', theme: 'grass', groundType: 'grass', rows: editGrid.slice() });
   state = 'PLAY';
 }
@@ -7574,7 +7632,7 @@ function customListAt(x, y) {
 }
 function playCustomIdx(i) {
   const lv = customLevels[i]; if (!lv) return;
-  hearts = 3;
+  resetHearts();
   loadCustom({ name: lv.name, theme: 'grass', groundType: 'grass', rows: lv.rows });
   state = 'PLAY';
 }
@@ -8104,6 +8162,9 @@ canvas.addEventListener('pointerdown', e => {
     if (x >= L.resetProgress.x && x <= L.resetProgress.x + L.resetProgress.w && y >= L.resetProgress.y && y <= L.resetProgress.y + L.resetProgress.h) { resetProgress(); return; }
     if (x >= L.fullscreen.x && x <= L.fullscreen.x + L.fullscreen.w && y >= L.fullscreen.y && y <= L.fullscreen.y + L.fullscreen.h) { toggleFullscreen(); return; }
     if (x >= L.oldMusic.x && x <= L.oldMusic.x + L.oldMusic.w && y >= L.oldMusic.y && y <= L.oldMusic.y + L.oldMusic.h) { setOldMusic(!useOldMusic); sfx.click(); return; }
+    for (const b of L.diffBtns) {
+      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { setDifficulty(b.d); return; }
+    }
     for (const b of L.qualityBtns) {
       if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { setQuality(b.q); sfx.click(); return; }
     }
@@ -8399,12 +8460,12 @@ canvas.addEventListener('wheel', e => {
 }, { passive: false });
 
 function startLevel(i) {
-  hearts = 3; loadLevel(i);
+  resetHearts(); loadLevel(i);
   if (STORIES[i]) { story = STORIES[i]; state = 'STORY'; }
   else { setLevelTip(); state = 'PLAY'; }
 }
 function restart() {
-  hearts = 3;
+  resetHearts();
   if (playingCustom) loadCustom(customDef);
   else loadLevel(levelIndex);
   setLevelTip();
@@ -8414,7 +8475,7 @@ function nextLevel() {
   if (playingCustom) { playingCustom = false; customDef = null; state = 'TITLE'; return; }
   if (levelIndex < LEVELS.length - 1) {
     const n = levelIndex + 1;
-    hearts = 3; loadLevel(n);
+    resetHearts(); loadLevel(n);
     if (STORIES[n]) { story = STORIES[n]; state = 'STORY'; }
     else { setLevelTip(); state = 'PLAY'; }
   }
