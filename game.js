@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.22';  // 游戏版本号
+const GAME_VERSION = '2.23';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -946,6 +946,7 @@ const I18N_ROWS = [
   ['命中', 'Hits', 'Coups', '命中', 'Treffer'],
   ['移动鼠标瞄准 · 按 X 发射（自动瞄准）', 'Move mouse to aim · press X to fire (auto-aim)', 'Bougez la souris pour viser · X pour tirer (visée auto)', 'マウスで狙い · X で発射（自動照準）', 'Maus bewegen zum Zielen · X zum Abfeuern (Auto-Ziel)'],
   ['打肿博士！', 'You bruised Dr. Square!', 'Dr. Carré est KO !', '博士を打ち負かした！', 'Dr. Quadrat ist erledigt!'],
+  ['发射飞弹或跳上去踩头！', 'Fire missiles or stomp on its head!', 'Tirez des missiles ou écrasez sa tête !', 'ミサイルを撃つか、頭を踏め！', 'Feuere Raketen oder spring auf seinen Kopf!'],
   // 教程
   ['🎓 新手教程', '🎓 Tutorial', '🎓 Tutoriel', '🎓 チュートリアル', '🎓 Tutorial'],
   ['← → 或 A / D：左右滚动', '← → or A / D: roll left and right', '← → ou A / D : rouler à gauche et à droite', '← → または A / D：左右に転がる', '← → oder A / D: nach links und rechts rollen'],
@@ -4432,11 +4433,11 @@ function drawLava(lv, t) {
 function startChase() {
   const obs = [];
   for (let i = 0; i < 6; i++) obs.push({ x: ball.x + 700 + i * 750, y: ball.y + 22, r: 22, spin: i * 1.3 });
-  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 340, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0 };
+  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0 };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   missiles = [];
   conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
-  flashMsg(t('发射飞弹追上博士！'));
+  flashMsg(t('发射飞弹或跳上去踩头！'));
 }
 function updateChase(dt) {
   if (!chase || !chase.on) return;
@@ -4457,6 +4458,15 @@ function updateChase(dt) {
   if (!chase.aiming) { chase.aimX = chase.doctorX; chase.aimY = chase.doctorY; }  // 自动瞄准：未手动瞄准时，准星自动锁定博士
   updateMissiles(dt);
   updateChaseObstacles(dt);
+  // 跳上去踩头：落到博士头顶也算命中（和飞弹一样打肿）
+  const size = 32 + (chase.swell || 0) * 14;
+  if (Math.abs(ball.x - chase.doctorX) < ball.r + size / 2 + 6 && ball.vy > -40 && ball.y + ball.r < chase.doctorY + 10 && ball.y + ball.r > chase.doctorY - size - 6) {
+    chase.hits++;
+    chase.swell = chase.hits;
+    ball.vy = -520;   // 踩头反弹
+    sfx.stomp(); spawnPuff(chase.doctorX, chase.doctorY - size * 0.3, 14); shake = Math.max(shake, 6);
+    flashMsg(t('命中博士！') + '（' + chase.hits + '/3）');
+  }
   if (chase.hits >= 3) {   // 打肿（命中 3 次）→ 飞出去过渡
     chase.ending = true; chase.endT = 0; chase.spin = 0;
     chase.knockVX = 600; chase.knockVY = -440;
@@ -6587,6 +6597,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.23', text: '宇宙终章：博士跑慢一点 + 可跳上头顶踩它（也算命中）' },
   { v: '2.22', text: '宇宙终章：追逐增加少量障碍物 + 打肿后博士飞出去过渡' },
   { v: '2.21', text: '宇宙终章：可自行瞄准目标（准星）+ 自动瞄准追踪 + 子弹碰撞箱加大' },
   { v: '2.20', text: '宇宙终章：命中 3 次飞弹打肿博士才成功，否则失败结局（黑暗降临）' },
