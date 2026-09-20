@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.26';  // 游戏版本号
+const GAME_VERSION = '2.27';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -489,6 +489,14 @@ let clothesIndex = 0;       // 0 = 无衣服，1..CLOTHES.length
 let glassesIndex = 0;       // 0 = 无眼镜，1..GLASSES.length
 let maxUnlocked = 1;        // 已解锁最高关卡（1 基）
 let bestStars = [];
+let owned = { hats: [], clothes: [], glasses: [] };   // 已用星星兑换的时装（1 基索引）
+let spentStars = 0;                                    // 已花掉的星星（余额 = 累计星数 - 已花）
+const FASHION_COST = { hats: 10, clothes: 12, glasses: 15 };   // 各品类时装单价（星星）
+
+function totalStars() { return bestStars.reduce((a, b) => a + (b || 0), 0); }
+function walletStars() { return Math.max(0, totalStars() - spentStars); }
+function fashionCost(cat) { return FASHION_COST[cat] || 10; }
+function fashionOwned(cat, idx) { return idx === 0 || (owned[cat] || []).includes(idx); }
 
 let solids = [];            // 静态地面/平台 {x,y,w,h,type}
 let boxes = [];             // 可推动的箱子
@@ -809,6 +817,9 @@ const I18N_ROWS = [
   ['墨镜', 'Sunglasses', 'Lunettes de soleil', 'サングラス', 'Sonnenbrille'],
   ['护目镜', 'Goggles', 'Lunettes de protection', 'ゴーグル', 'Schutzbrille'],
   ['无', 'None', 'Aucun', 'なし', 'Keine'],
+  ['已购买', 'Purchased', 'Acheté', '購入済み', 'Gekauft'],
+  ['星星不够', 'Not enough stars', 'Pas assez d\'étoiles', '星が足りません', 'Nicht genug Sterne'],
+  ['用星星兑换时装', 'Buy outfits with stars', 'Acheter des tenues avec des étoiles', '星で衣装を交換', 'Outfits mit Sternen kaufen'],
   // 制作组
   ['制作组', 'Credits', 'Crédits', 'スタッフ', 'Mitwirkende'],
   ['游戏开发', 'Game Development', 'Développement du jeu', 'ゲーム開発', 'Spielentwicklung'],
@@ -1220,6 +1231,13 @@ function loadProgress() {
     if (c >= 0 && c <= CLOTHES.length) clothesIndex = c;
     const g = parseInt(localStorage.getItem('rb_glasses') || '0', 10);
     if (g >= 0 && g <= GLASSES.length) glassesIndex = g;
+    // 时装兑换：已拥有 + 已花星星
+    try { const ow = JSON.parse(localStorage.getItem('rb_owned') || 'null'); owned = ow || { hats: [], clothes: [], glasses: [] }; } catch (e) { owned = { hats: [], clothes: [], glasses: [] }; }
+    const sp = parseInt(localStorage.getItem('rb_spent') || '0', 10); spentStars = (isFinite(sp) && sp > 0) ? sp : 0;
+    // 迁移：旧存档里已装备的时装自动视为已拥有，避免升级后「裸装」
+    if (hatIndex > 0 && !owned.hats.includes(hatIndex)) owned.hats.push(hatIndex);
+    if (clothesIndex > 0 && !owned.clothes.includes(clothesIndex)) owned.clothes.push(clothesIndex);
+    if (glassesIndex > 0 && !owned.glasses.includes(glassesIndex)) owned.glasses.push(glassesIndex);
     maxUnlocked = parseInt(localStorage.getItem('rb_unlocked') || '1', 10);
     const bs = localStorage.getItem('rb_stars');
     bestStars = bs ? JSON.parse(bs) : [];
@@ -1255,6 +1273,8 @@ function saveProgress() {
     localStorage.setItem('rb_glasses', String(glassesIndex));
     localStorage.setItem('rb_unlocked', String(maxUnlocked));
     localStorage.setItem('rb_stars', JSON.stringify(bestStars));
+    localStorage.setItem('rb_owned', JSON.stringify(owned));
+    localStorage.setItem('rb_spent', String(spentStars));
   } catch (e) {}
   saveUserData();
 }
@@ -1281,6 +1301,7 @@ function saveUserData() {
       lang: LANG,
       skin: skinIndex, hat: hatIndex, clothes: clothesIndex, glasses: glassesIndex,
       unlocked: maxUnlocked, stars: bestStars,
+      owned: owned, spentStars: spentStars,
       custom: customLevels, overrides: overrides, overrideNames: overrideNames,
       editorUnlocked: editorUnlocked, tutorialSeen: tutorialSeen,
       musicMuted: musicMuted, sfxMuted: sfxMuted, musicVol: musicVol, sfxVol: sfxVol,
@@ -1294,6 +1315,7 @@ function resetPlayerData() {
   LANG = 'en';
   skinIndex = 0; hatIndex = 0; clothesIndex = 0; glassesIndex = 0;
   maxUnlocked = 1; bestStars = [];
+  owned = { hats: [], clothes: [], glasses: [] }; spentStars = 0;
   customLevels = []; overrides = {}; overrideNames = {};
   editorUnlocked = false; tutorialSeen = false;
   musicMuted = false; sfxMuted = false; musicVol = 1.0; sfxVol = 1.0;
@@ -1303,6 +1325,7 @@ function resetPlayerData() {
     localStorage.removeItem('rb_skin'); localStorage.removeItem('rb_hat');
     localStorage.removeItem('rb_clothes'); localStorage.removeItem('rb_glasses');
     localStorage.removeItem('rb_unlocked'); localStorage.removeItem('rb_stars');
+    localStorage.removeItem('rb_owned'); localStorage.removeItem('rb_spent');
     localStorage.removeItem('rb_custom'); localStorage.removeItem('rb_overrides'); localStorage.removeItem('rb_override_names');
     localStorage.removeItem('rb_editor_unlocked'); localStorage.removeItem('rb_tut');
     localStorage.removeItem('rb_music'); localStorage.removeItem('rb_sfx');
@@ -1323,6 +1346,8 @@ function loadUserData(name) {
     if (d.glasses != null) glassesIndex = d.glasses;
     if (d.unlocked != null) maxUnlocked = d.unlocked;
     if (d.stars) bestStars = d.stars;
+    if (d.owned) owned = d.owned;
+    if (d.spentStars != null) spentStars = d.spentStars;
     if (d.custom) customLevels = d.custom;
     if (d.overrides) overrides = d.overrides;
     if (d.overrideNames) overrideNames = d.overrideNames;
@@ -6516,6 +6541,49 @@ function drawBallSwatch(r) {
   drawBallBody(sk, r);
   ctx.strokeStyle = sk.edge; ctx.lineWidth = Math.max(1.5, r * 0.08); ctx.stroke();
 }
+// 持久化时装兑换（拥有 + 已花星星）
+function saveOwned() {
+  try {
+    localStorage.setItem('rb_owned', JSON.stringify(owned));
+    localStorage.setItem('rb_spent', String(spentStars));
+  } catch (e) {}
+  saveUserData();
+}
+// 点选时装：已拥有 → 直接穿；未拥有 → 用星星兑换（星星不够则提示）
+function tryEquipFashion(cat, idx) {
+  if (idx === 0 || fashionOwned(cat, idx)) {
+    if (cat === 'hats') hatIndex = idx;
+    else if (cat === 'clothes') clothesIndex = idx;
+    else glassesIndex = idx;
+    saveProgress();
+    return;
+  }
+  const cost = fashionCost(cat);
+  if (walletStars() >= cost) {
+    spentStars += cost;
+    owned[cat].push(idx);
+    saveOwned();
+    if (cat === 'hats') hatIndex = idx;
+    else if (cat === 'clothes') clothesIndex = idx;
+    else glassesIndex = idx;
+    saveProgress();
+    sfx.coin();
+    flashMsg(t('已购买') + ' · ⭐ -' + cost);
+  } else {
+    sfx.hurt();
+    flashMsg(t('星星不够') + '（' + walletStars() + '/' + cost + '）');
+  }
+}
+// 未解锁时装的锁 + 价格遮罩
+function drawFashionLock(x, y, w, h, cost) {
+  ctx.fillStyle = 'rgba(16,18,30,.68)'; roundRect(x, y, w, h, 12); ctx.fill();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 16px system-ui, sans-serif'; ctx.fillStyle = '#fff';
+  ctx.fillText('🔒', x + w / 2, y + h / 2 - 9);
+  ctx.font = 'bold 13px system-ui, sans-serif'; ctx.fillStyle = '#ffd23e';
+  ctx.fillText('⭐' + cost, x + w / 2, y + h / 2 + 11);
+  ctx.textBaseline = 'alphabetic';
+}
 function drawWardrobe() {
   drawBackground('grass');
   const tr = wardrobeTransform();
@@ -6530,6 +6598,22 @@ function drawWardrobe() {
   ctx.strokeStyle = '#7a3fd0'; ctx.lineWidth = 6; ctx.lineJoin = 'round';
   ctx.strokeText(t('更衣室'), 480, 48);
   ctx.fillText(t('更衣室'), 480, 48);
+  ctx.font = 'bold 14px system-ui, sans-serif'; ctx.fillStyle = 'rgba(23,50,77,.72)';
+  ctx.fillText(t('用星星兑换时装'), 480, 74);
+
+  // 星星钱包（右上角，避开居中标题）
+  {
+    const stars = walletStars();
+    const sw = 128, sh = 36, sx = 960 - sw - 16, sy = 24;
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; roundRect(sx, sy, sw, sh, 18); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.16)'; ctx.lineWidth = 2; roundRect(sx, sy, sw, sh, 18); ctx.stroke();
+    ctx.fillStyle = '#ffd23e'; drawStar(sx + 26, sy + 18, 13); ctx.fill();
+    ctx.strokeStyle = '#e0a000'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#17324d';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(stars), sx + 48, sy + 19);
+    ctx.textBaseline = 'alphabetic';
+  }
 
   // 左下角大预览
   const sk = SKINS[skinIndex];
@@ -6603,6 +6687,7 @@ function drawWardrobe() {
       drawHat(14, b.idx);
       ctx.restore();
     }
+    if (b.idx > 0 && !fashionOwned('hats', b.idx)) drawFashionLock(b.x, b.y, b.w, b.h, fashionCost('hats'));
   }
 
   // 衣服区
@@ -6625,6 +6710,7 @@ function drawWardrobe() {
       drawClothes(14, b.idx);
       ctx.restore();
     }
+    if (b.idx > 0 && !fashionOwned('clothes', b.idx)) drawFashionLock(b.x, b.y, b.w, b.h, fashionCost('clothes'));
   }
 
   // 眼镜区
@@ -6647,6 +6733,7 @@ function drawWardrobe() {
       drawGlasses(14, b.idx);
       ctx.restore();
     }
+    if (b.idx > 0 && !fashionOwned('glasses', b.idx)) drawFashionLock(b.x, b.y, b.w, b.h, fashionCost('glasses'));
   }
 
   ctx.restore();
@@ -6655,6 +6742,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.27', text: '时装（帽子/衣服/眼镜）改为用星星兑换，更衣室右上角显示星星余额' },
   { v: '2.26', text: '机械蜘蛛（洞穴）、钢铁压路机（森林）头顶踩踏判定更宽松，更容易踩头击杀' },
   { v: '2.25', text: '新增简单/普通/困难三档难度：命数 5/4/3、小怪伤害 0.5/1/1.5、瞄准简单/普通/困难' },
   { v: '2.24', text: '宇宙终章：全自动瞄准（飞弹始终追踪博士），不再需要手动瞄准' },
@@ -8272,13 +8360,13 @@ canvas.addEventListener('pointerdown', e => {
       if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { skinIndex = b.i; playMotif(['hero','funny','cool','mysterious'][b.i % 4]); saveProgress(); return; }
     }
     for (const b of wardrobeHatBtns()) {
-      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { hatIndex = b.idx; saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { tryEquipFashion('hats', b.idx); return; }
     }
     for (const b of wardrobeClothesBtns()) {
-      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { clothesIndex = b.idx; saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { tryEquipFashion('clothes', b.idx); return; }
     }
     for (const b of wardrobeGlassesBtns()) {
-      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { glassesIndex = b.idx; saveProgress(); return; }
+      if (d.x > b.x && d.x < b.x + b.w && d.y > b.y && d.y < b.y + b.h) { tryEquipFashion('glasses', b.idx); return; }
     }
     return;
   }
