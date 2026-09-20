@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.28';  // 游戏版本号
+const GAME_VERSION = '2.29';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -692,7 +692,7 @@ const STORIES = {
   ] },
   44: { title: '峡谷终章 · 熔岩机械臂', lines: [
     '熔岩机械臂现身了！',
-    '直接踩头攻击它的核心，小心机械臂！',
+    '踩按钮冻住机械臂，再跳上核心攻击！',
   ] },
   45: { title: '第四章 · 矿井篇', lines: [
     '峡谷之下，是黑暗的矿井。',
@@ -710,7 +710,7 @@ const STORIES = {
   ] },
   74: { title: '最终决战 · 方块博士', lines: [
     '方块博士驾驶巨型机器人现身了！',
-    '黄眼时踩它，红眼时躲开导弹！',
+    '躲开导弹，等核心暴露时踩它！',
   ] },
 };
 const ENDING = { title: '结局 · 光明重现', lines: [
@@ -1072,9 +1072,9 @@ const I18N_ROWS = [
   ['追上去！别被甩掉！', 'Chase it! Don\'t fall behind!', 'Poursuivez-le ! Ne restez pas derrière !', '追いかけろ！遅れるな！', 'Verfolge ihn! Bleib nicht zurück!'],
   ['别被甩掉！', 'Don\'t fall behind!', 'Ne restez pas derrière !', '遅れるな！', 'Bleib nicht zurück!'],
   ['Boss：钢铁压路机！直接踩头击杀，小心它召唤的小怪！', 'Boss: Iron Crusher! Stomp its head, but watch out for the minions it summons!', 'Boss : Rouleau de Fer ! Écrasez sa tête, mais attention aux sbires !', 'ボス：アイアンクラッシャー！頭を踏んで倒せ、召喚される雑魚に注意！', 'Boss: Eisenwalze! Spring auf seinen Kopf, aber achte auf die Schergen!'],
-  ['Boss：熔岩机械臂！直接踩头攻击核心，小心机械臂！', 'Boss: Lava Claw! Stomp its core directly, watch the arms!', 'Boss : Griffe de Lave ! Écrasez son noyau, attention aux bras !', 'ボス：ラヴァクロー！コアを直接踏め、アームに注意！', 'Boss: Lavakralle! Spring direkt auf den Kern, achte auf die Arme!'],
+  ['Boss：熔岩机械臂！踩按钮冻住机械臂，再跳上核心攻击！', 'Boss: Lava Claw! Step on the buttons to freeze the arms, then stomp the core!', 'Boss : Griffe de Lave ! Geler les bras puis écrasez le noyau !', 'ボス：ラヴァクロー！ボタンでアームを凍らせ、コアを踏め！', 'Boss: Lavakralle! Friere die Arme ein, dann spring auf den Kern!'],
   ['Boss：机械蜘蛛！直接踩头击杀，小心它召唤的小蜘蛛！', 'Boss: Spider-8! Stomp its head, but watch out for the spiderlings!', 'Boss : Araignée-8 ! Écrasez sa tête, mais attention aux bébés araignées !', 'ボス：スパイダー8！頭を踏んで倒せ、召喚される子グモに注意！', 'Boss: Spinne-8! Spring auf seinen Kopf, aber achte auf die Spinnen!'],
-  ['最终Boss：方块博士！黄眼时踩它，红眼时躲开导弹！', 'Final Boss: Dr. Square! Stomp it when its eyes are yellow, dodge missiles when red!', 'Boss final : Dr. Carré ! Écrasez-le quand ses yeux sont jaunes, esquivez les missiles quand ils sont rouges !', '最終ボス：ドクター・スクエア！目が黄色のとき踏め、赤のときミサイルを避けろ！', 'Endboss: Dr. Quadrat! Spring drauf bei gelben Augen, weiche Raketen bei roten aus!'],
+  ['最终Boss：方块博士！躲开导弹，等核心暴露时踩它！', 'Final Boss: Dr. Square! Dodge the missiles and stomp the core when exposed!', 'Boss final : Dr. Carré ! Esquivez les missiles et écrasez le noyau exposé !', '最終ボス：ドクター・スクエア！ミサイルを避け、コア露出時に踏め！', 'Endboss: Dr. Quadrat! Weiche Raketen aus und spring auf den Kern, wenn er freiliegt!'],
   ['距离', 'Distance', 'Distance', '距離', 'Distanz'],
   ['米', 'm', 'm', 'm', 'm'],
   ['发射飞弹追上博士！', 'Fire missiles to catch Dr. Square!', 'Tirez des missiles pour rattraper Dr. Carré !', 'ミサイルで博士を追え！', 'Feuere Raketen ab, um Dr. Quadrat zu erwischen!'],
@@ -1088,14 +1088,12 @@ const I18N_ROWS = [
   ['峡谷终章 · 熔岩机械臂', 'Canyon Finale · Lava Claw', 'Finale du canyon · Griffe de Lave', '峡谷の最終章 · ラヴァクロー', 'Schlucht-Finale · Lavakralle'],
   ['熔岩机械臂现身了！', 'The Lava Claw appears!', 'La Griffe de Lave apparaît !', 'ラヴァクローが現れた！', 'Die Lavakralle erscheint!'],
   ['踩按钮冻住机械臂，再跳上核心攻击！', 'Step on the buttons to freeze the arms, then stomp the core!', 'Geler les bras puis écrasez le noyau !', 'ボタンでアームを凍らせ、コアを踏め！', 'Friere die Arme ein, dann spring auf den Kern!'],
-  ['直接踩头攻击它的核心，小心机械臂！', 'Stomp its core directly — watch out for the arms!', 'Écrasez directement son noyau — gare aux bras !', 'コアを直接踏め、アームに気をつけろ！', 'Spring direkt auf den Kern — achte auf die Arme!'],
   ['矿井终章 · 机械蜘蛛', 'Mine Finale · Spider-8', 'Finale de la mine · Araignée-8', '鉱山の最終章 · スパイダー8', 'Minen-Finale · Spinne-8'],
   ['机械蜘蛛现身了！', 'Spider-8 appears!', 'Araignée-8 apparaît !', 'スパイダー8が現れた！', 'Spinne-8 erscheint!'],
   ['直接踩头击杀它，小心它召唤的小蜘蛛！', 'Stomp its head to defeat it — watch for the spiderlings!', 'Écrasez sa tête pour le vaincre — gare aux bébés araignées !', '頭を踏んで倒せ、召喚される子グモに気をつけろ！', 'Spring auf seinen Kopf, um ihn zu besiegen — achte auf die Spinnen!'],
   ['最终决战 · 方块博士', 'Final Battle · Dr. Square', 'Bataille finale · Dr. Carré', '最終決戦 · ドクター・スクエア', 'Letzte Schlacht · Dr. Quadrat'],
   ['方块博士驾驶巨型机器人现身了！', 'Dr. Square appears in a giant robot!', 'Dr. Carré apparaît dans un robot géant !', 'ドクター・スクエアが巨大ロボットで現れた！', 'Dr. Quadrat erscheint in einem Riesenroboter!'],
   ['躲开导弹，等核心暴露时踩它！', 'Dodge the missiles and stomp the core when exposed!', 'Esquivez les missiles et écrasez le noyau exposé !', 'ミサイルを避け、コア露出時に踏め！', 'Weiche Raketen aus und spring auf den Kern, wenn er freiliegt!'],
-  ['黄眼时踩它，红眼时躲开导弹！', 'Stomp it when its eyes are yellow, dodge missiles when red!', 'Écrasez-le quand ses yeux sont jaunes, esquivez les missiles quand ils sont rouges !', '目が黄色のとき踏め、赤のときミサイルを避けろ！', 'Spring drauf bei gelben Augen, weiche Raketen bei roten aus!'],
   // HUD
   ['无敌', 'Invincible', 'Invincible', '無敵', 'Unbesiegbar'],
   ['飞行', 'Flying', 'Vol', '飛行', 'Fliegen'],
@@ -2213,7 +2211,7 @@ function mkEnemy(cx, cy, type, bossKind) {
       crusher: { hw: 40, hh: 36, speed: 120, hp: 5 },
       claw:    { hw: 56, hh: 30, speed: 0,   hp: 5 },
       spider:  { hw: 30, hh: 22, speed: 90,  hp: 5 },
-      square:  { hw: 54, hh: 50, speed: 0,   hp: 3 },
+      square:  { hw: 54, hh: 50, speed: 0,   hp: 6 },
     }[bk] || { hw: 34, hh: 30, speed: 55, hp: BOSS_HP };
     return { x: cx, y: cy, hw: cfg.hw, hh: cfg.hh, vx: 0, vy: 0, dir: -1, speed: cfg.speed, grounded: false, dead: false, type: 'boss', bossKind: bk, hp: cfg.hp, maxHp: cfg.hp, hitFlash: 0, charge: 0, vulnerable: false, phase: 0, stun: 0, frozen: 0, cd1: 1.2, cd2: 2.4, cd3: 5, state: 'idle' };
   }
@@ -2775,7 +2773,7 @@ function arenaSpider(g, set, W, G) {
 }
 // 方块博士：太空金属地板 + 传送带，巨型机器人悬浮半空
 function arenaSquare(g, set, W, G) {
-  for (let c = 0; c < W; c++) { set(G, c, '#'); set(G + 1, c, 'd'); }
+  for (let c = 0; c < W; c++) { set(G, c, '#'); set(G + 1, c, 'd'); set(G - 1, c, '@'); }
   set(G - 1, 1, 'P'); set(G - 1, 3, 'R');
   set(G - 1, 8, '*'); set(G - 1, 14, '*');
   set(G - 2, 34, 'o');
@@ -4339,13 +4337,15 @@ function updateBossCrusher(e, dt) {
   }
 }
 
-/* —— 熔岩机械臂 Lava Claw：踩按钮冻臂 → 踩核心扣血；阶段二双臂齐攻 + 平台下沉 —— */
+/* —— 熔岩机械臂 Lava Claw：踩按钮冻臂 → 踩核心扣血；双臂仅视觉下砸（不伤人）；发射导弹 + 每 30 秒召唤按钮 —— */
 function updateBossClaw(e, dt) {
-  // 直接可踩：踩头即扣血（移除冻臂按钮机制，降低峡谷 Boss 难度）
-  e.vulnerable = true;
+  // 踩按钮冻住机械臂 → 核心暴露可踩
+  if (buttons.some(b => isPressingButton(b))) e.frozen = 3.5;
+  e.frozen = Math.max(0, e.frozen - dt);
+  e.vulnerable = e.frozen > 0;
   if (e.armT === undefined) { e.armT = 0; e.palmL = { x: 0, y: 0, w: 52, h: 26, active: false }; e.palmR = { x: 0, y: 0, w: 52, h: 26, active: false }; }
   e.armT += dt;
-  // 左臂周期下砸：先抬起 1.2 秒再下砸 0.8 秒，容易预判躲避
+  // 左臂周期下砸：先抬起 1.2 秒再下砸 0.8 秒（纯视觉威胁，不伤人）
   const period = 4.0;
   const cyc = e.armT % period;
   if (cyc >= 1.2 && cyc < 2.0) { e.palmL.active = true; e.palmL.x = ball.x - 26; e.palmL.y = mapH - 90; }
@@ -4357,14 +4357,23 @@ function updateBossClaw(e, dt) {
     e.palmR.x = e.x + e.hw + 40 - k * (e.hw * 2 + 200);
     e.palmR.y = mapH - 90;
   } else e.palmR.active = false;
-  // 手掌命中玩家
-  const hitPalm = (p) => p.active && ball.x > p.x - ball.r && ball.x < p.x + p.w + ball.r && ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h;
-  if ((hitPalm(e.palmL) || hitPalm(e.palmR)) && ball.inv <= 0) hurt();
-  // 抛石块：更慢、更少
+  // 发射导弹（发射前 0.6 秒蓝眼预警）；冻结时不发射
+  if (e.firing !== undefined) e.firing = Math.max(0, e.firing - dt);
   e.cd1 -= dt;
-  if (e.cd1 <= 0) {
-    e.cd1 = 5.0;
-    projectiles.push({ x: e.x, y: e.y + e.hh, vx: (ball.x - e.x) * 1.1, vy: -340, r: 9, life: 4, dead: false });
+  if (e.cd1 <= 0 && !e.frozen) {
+    e.cd1 = 3.2;
+    e.firing = 0.6;
+    const dx = ball.x - e.x, dy = ball.y - e.y, d = Math.hypot(dx, dy) || 1;
+    projectiles.push({ x: e.x, y: e.y + e.hh, vx: dx / d * 260, vy: dy / d * 260, r: 8, life: 4, dead: false });
+    sfx.summon();
+  }
+  // 每 30 秒在玩家半径 5 格内召唤一个按钮（踩上冻臂）；开局先给一个，之后固定 30 秒
+  if (e.summonCd === undefined) e.summonCd = 0.8;
+  e.summonCd -= dt;
+  if (e.summonCd <= 0) {
+    e.summonCd = 30;
+    const bx = clamp(ball.x + (Math.random() - 0.5) * 2 * 5 * TILE, TILE, levelWidth() - TILE);
+    buttons.push({ x: bx, y: mapH - 2 * TILE - 10, w: TILE, h: 10, on: false });
     sfx.summon();
   }
 }
@@ -4413,11 +4422,8 @@ function updateBossSpider(e, dt) {
 
 /* —— 方块博士 Dr. Square：三阶段 + 追逐 —— */
 function updateBossSquare(e, dt) {
-  // 2 分钟倒计时：超时未击败则失败
-  if (e.fightT === undefined) e.fightT = 0;
-  e.fightT += dt;
-  if (e.fightT >= 120) { e.fightT = 120; if (state === 'PLAY') gameOver(); return; }
-
+  const phase = e.hp >= 5 ? 1 : (e.hp >= 3 ? 2 : 3);
+  e.phase = phase;
   if (e.hp <= 0 && !e.exploded) {
     e.exploded = true;
     shake = 22; sfx.win();
@@ -4426,25 +4432,30 @@ function updateBossSquare(e, dt) {
     return;
   }
   if (e.exploded) return;
-
-  // 两种形态：红眼 2 秒（不可攻击）→ 黄眼 1 秒（可攻击）循环
-  if (e.eyeT === undefined) e.eyeT = 0;
-  e.eyeT += dt;
-  const RED_T = 2, YELLOW_T = 1, cyc = e.eyeT % (RED_T + YELLOW_T);
-  const nextVuln = cyc >= RED_T;
-  if (nextVuln !== e.vulnerable) { e.vulnerable = nextVuln; if (e.vulnerable) sfx.vuln(); }
-
-  // 自动瞄准导弹：每次齐射 5 发，飞行中持续追踪玩家
+  // 核心暴露窗口循环（红→黄）
+  if (e.cd2 === undefined) e.cd2 = 4;
+  e.cd2 -= dt;
+  if (e.cd2 <= 0) { e.cd2 = 5; e.vulnerable = !e.vulnerable; if (e.vulnerable) sfx.vuln(); }
+  // 导弹
   e.cd1 -= dt;
   if (e.cd1 <= 0) {
-    e.cd1 = 3.2;
-    const base = Math.atan2(ball.y - e.y, ball.x - e.x);
-    for (let i = 0; i < 5; i++) {
-      const a = base + (i - 2) * 0.32 + (Math.random() - 0.5) * 0.2;
-      projectiles.push({ x: e.x, y: e.y, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200, r: 8, life: 5, dead: false, home: true });
-    }
+    e.cd1 = phase === 1 ? 2.6 : 1.8;
+    const dx = ball.x - e.x, dy = ball.y - e.y, d = Math.hypot(dx, dy) || 1;
+    projectiles.push({ x: e.x, y: e.y, vx: dx / d * 260, vy: dy / d * 260, r: 8, life: 4, dead: false });
     sfx.summon();
   }
+  // 召唤小方块（限制场上数量，最多 3 只）
+  e.cd3 -= dt;
+  if (e.cd3 <= 0) {
+    e.cd3 = phase === 3 ? 4 : 7;
+    const live = enemies.filter(x => !x.dead && x.type !== 'boss').length;
+    if (live < 3) {
+      enemies.push(mkEnemy(e.x + (Math.random() - 0.5) * 80, e.y - e.hh - 40, 'walker'));
+      sfx.summon();
+    }
+  }
+  // 阶段二起地面加速
+  conveyorBoost = phase >= 2 ? Math.min(2, conveyorBoost + dt * 0.05) : 1;
 }
 
 /* —— 熔岩（机械臂 Boss 场）—— */
@@ -4494,7 +4505,7 @@ function startChase() {
   const obs = [];
   for (let i = 0; i < 6; i++) obs.push({ x: ball.x + 700 + i * 750, y: ball.y + 22, r: 22, spin: i * 1.3 });
   const aim = aimCfg();
-  chase = { on: true, t: 0, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 3, hits: 0, swell: 0, duration: 12, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0, turn: aim.turn, hitHalf: aim.hitHalf };
+  chase = { on: true, t: 0, eyeT: 0, vuln: false, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 3, hits: 0, swell: 0, duration: 120, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0, turn: aim.turn, hitHalf: aim.hitHalf };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   missiles = [];
   conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
@@ -4515,13 +4526,21 @@ function updateChase(dt) {
     if (chase.endT >= 1.3) { chase.on = false; winLevel(); }
     return;
   }
-  chase.doctorX += chase.doctorVX * dt;   // 博士向右逃跑
+  // 红眼 2 秒（不可打）→ 黄眼 1 秒（可打）循环
+  if (chase.eyeT === undefined) chase.eyeT = 0;
+  chase.eyeT += dt;
+  const RED_T = 2, YELLOW_T = 1, cyc = chase.eyeT % (RED_T + YELLOW_T);
+  const nextVuln = cyc >= RED_T;
+  if (nextVuln !== chase.vuln) { chase.vuln = nextVuln; if (chase.vuln) sfx.vuln(); }
+  chase.doctorX += chase.doctorVX * dt;   // 博士向右逃跑，撞边折返（2 分钟内留在场内）
+  if (chase.doctorX >= levelWidth() - 140) { chase.doctorX = levelWidth() - 140; chase.doctorVX = -Math.abs(chase.doctorVX); }
+  if (chase.doctorX <= 220) { chase.doctorX = 220; chase.doctorVX = Math.abs(chase.doctorVX); }
   chase.aimX = chase.doctorX; chase.aimY = chase.doctorY;   // 自动瞄准：准星始终锁定博士，无需精确瞄准
   updateMissiles(dt);
   updateChaseObstacles(dt);
-  // 跳上去踩头：落到博士头顶也算命中（和飞弹一样打肿）
+  // 跳上去踩头：只有黄眼时可打；落到博士头顶也算命中（和飞弹一样打肿）
   const size = 32 + (chase.swell || 0) * 14;
-  if (Math.abs(ball.x - chase.doctorX) < ball.r + size / 2 + 6 && ball.vy > -40 && ball.y + ball.r < chase.doctorY + 10 && ball.y + ball.r > chase.doctorY - size - 6) {
+  if (chase.vuln && Math.abs(ball.x - chase.doctorX) < ball.r + size / 2 + 6 && ball.vy > -40 && ball.y + ball.r < chase.doctorY + 10 && ball.y + ball.r > chase.doctorY - size - 6) {
     chase.hits++;
     chase.swell = chase.hits;
     ball.vy = -520;   // 踩头反弹
@@ -4534,7 +4553,7 @@ function updateChase(dt) {
     flashMsg(t('打肿博士！'));
     return;
   }
-  if (chase.t >= chase.duration || chase.doctorX >= levelWidth() - 140) { chase.on = false; endFail(); return; }  // 没打肿就逃走/超时 → 失败结局
+  if (chase.t >= chase.duration) { chase.on = false; endFail(); return; }  // 2 分钟没打肿 → 失败结局
 }
 function updateChaseObstacles(dt) {
   if (!chase || !chase.obstacles) return;
@@ -4577,7 +4596,7 @@ function updateMissiles(dt) {
     if (m.life <= 0) { m.dead = true; continue; }
     // 子弹碰撞箱很大：博士周围 hitHalf 像素都算命中（简单模式更大、困难模式更小）
     const hh = chase.hitHalf || 100;
-    if (chase && Math.abs(m.x - chase.doctorX) < hh && Math.abs(m.y - chase.doctorY) < hh) {
+    if (chase && chase.vuln && Math.abs(m.x - chase.doctorX) < hh && Math.abs(m.y - chase.doctorY) < hh) {
       m.dead = true;
       chase.hits++;
       chase.swell = chase.hits;   // 打肿程度（每中一次更肿）
@@ -4634,7 +4653,7 @@ function drawChase() {
   ctx.translate(dx, dy);
   if (chase.ending) ctx.rotate(chase.spin);   // 飞出去过渡：旋转翻滚
   ctx.fillStyle = color; roundRect(-size / 2, -size / 2, size, size, 6); ctx.fill();
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = chase.vuln ? '#ffd23e' : '#ff3b3b';
   ctx.beginPath(); ctx.arc(-size * 0.16, -size * 0.2, 3 + swell, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.arc(size * 0.16, -size * 0.2, 3 + swell, 0, 7); ctx.fill();
   ctx.restore();
@@ -4663,7 +4682,12 @@ function drawChase() {
   // 命中进度 + 剩余飞弹
   ctx.font = 'bold 20px system-ui, sans-serif'; ctx.fillStyle = '#fff'; ctx.lineWidth = 0;
   ctx.fillText(t('命中') + ' ' + chase.hits + '/3   🚀 × ' + chase.missilesLeft, VIEW_W / 2, 126);
-  ctx.fillText(chase.ending ? t('打肿博士！') : t('自动瞄准 · 按 X 发射飞弹'), VIEW_W / 2, 152);
+  ctx.fillText(chase.ending ? t('打肿博士！') : (chase.vuln ? t('黄眼! 可以打!') : t('红眼! 不能打!')), VIEW_W / 2, 152);
+  // 2 分钟倒计时（从博士飞出来才开始）
+  const remain = Math.max(0, chase.duration - chase.t);
+  const mm = Math.floor(remain / 60), ss = Math.floor(remain % 60);
+  ctx.fillStyle = remain < 15 ? '#ff6a6a' : '#fff';
+  ctx.fillText(t('剩余时间') + ' ' + mm + ':' + (ss < 10 ? '0' : '') + ss, VIEW_W / 2, 178);
   ctx.restore();
 }
 
@@ -4690,27 +4714,27 @@ function drawBossCrusher(e, time) {
 }
 
 function drawBossClaw(e, time) {
-  const flash = e.hitFlash > 0;
+  const flash = e.hitFlash > 0, frozen = e.frozen > 0, firing = e.firing > 0;
   ctx.save();
-  ctx.shadowColor = e.vulnerable ? 'rgba(255,210,60,.8)' : 'rgba(255,60,40,.5)';
+  ctx.shadowColor = frozen ? 'rgba(120,220,255,.8)' : (e.vulnerable ? 'rgba(255,210,60,.8)' : 'rgba(255,60,40,.5)');
   ctx.shadowBlur = 16;
-  ctx.fillStyle = flash ? '#fff' : '#5a3040';
+  ctx.fillStyle = flash ? '#fff' : (frozen ? '#5fb8e8' : '#5a3040');
   roundRect(-e.hw, -e.hh, e.hw * 2, e.hh * 2, 10); ctx.fill();
   ctx.restore();
   ctx.strokeStyle = flash ? '#fff' : '#200a10'; ctx.lineWidth = 3; roundRect(-e.hw, -e.hh, e.hw * 2, e.hh * 2, 10); ctx.stroke();
-  // 核心（黄色，直接可踩）
-  ctx.fillStyle = '#ffd23e';
+  // 核心
+  ctx.fillStyle = e.vulnerable ? '#ffd23e' : (frozen ? '#bfe9ff' : '#ff3b3b');
   ctx.beginPath(); ctx.arc(0, e.hh - 8, 9, 0, 7); ctx.fill();
-  // 眼睛
-  ctx.fillStyle = '#ff6a4a';
+  // 眼睛：发射导弹时蓝眼
+  ctx.fillStyle = firing ? '#6aa7ff' : (frozen ? '#dff6ff' : '#ff6a4a');
   ctx.beginPath(); ctx.arc(-e.hw * 0.35, -4, 6, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.arc(e.hw * 0.35, -4, 6, 0, 7); ctx.fill();
   // 机械臂
-  drawClawArm(e, -1, e.palmL, false);
-  drawClawArm(e, 1, e.palmR, false);
+  drawClawArm(e, -1, e.palmL, frozen);
+  drawClawArm(e, 1, e.palmR, frozen);
   ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(255,120,90,.95)';
-  ctx.fillText(t('直接踩头! 躲开下砸的机械臂!'), 0, -e.hh - 14);
+  ctx.fillStyle = frozen ? 'rgba(120,220,255,.95)' : 'rgba(255,120,90,.95)';
+  ctx.fillText(frozen ? t('冻结! 快踩核心!') : t('踩按钮冻住机械臂!'), 0, -e.hh - 14);
 }
 function drawClawArm(e, side, palm, frozen) {
   if (!palm) return;   // 尚未初始化（updateBossClaw 首次运行前）时安全跳过
@@ -4762,8 +4786,8 @@ function drawBossSquare(e, time) {
   ctx.beginPath(); ctx.arc(-20, -4, 7, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.arc(20, -4, 7, 0, 7); ctx.fill();
   ctx.font = 'bold 13px system-ui, sans-serif'; ctx.textAlign = 'center';
-  ctx.fillStyle = vuln ? 'rgba(255,210,60,.95)' : 'rgba(255,90,90,.95)';
-  ctx.fillText(vuln ? t('黄眼! 可以打!') : t('红眼! 不能打!'), 0, -e.hh - 14);
+  ctx.fillStyle = vuln ? 'rgba(255,210,60,.95)' : 'rgba(150,150,255,.9)';
+  ctx.fillText(vuln ? t('核心暴露! 踩它!') : t('躲导弹·等核心暴露'), 0, -e.hh - 14);
 }
 
 function update(dt) {
@@ -6311,15 +6335,6 @@ function drawHUD() {
     ctx.fillStyle = '#ff4d5a'; roundRect(bx, by, bw * Math.max(0, boss.hp) / boss.maxHp, 16, 4); ctx.fill();
     ctx.font = 'bold 13px system-ui, sans-serif'; ctx.fillStyle = '#fff';
     ctx.fillText(t(bossName(boss)), C, by + 13);
-    if (boss.bossKind === 'square' && !boss.exploded) {
-      const remain = Math.max(0, 120 - (boss.fightT || 0));
-      const mm = Math.floor(remain / 60), ss = Math.floor(remain % 60);
-      ctx.font = 'bold 14px system-ui, sans-serif'; ctx.fillStyle = remain < 15 ? '#ff6a6a' : '#fff';
-      ctx.strokeStyle = 'rgba(0,0,0,.4)'; ctx.lineWidth = 3;
-      const tTxt = t('剩余时间') + ' ' + mm + ':' + (ss < 10 ? '0' : '') + ss;
-      ctx.strokeText(tTxt, C, by + 34);
-      ctx.fillText(tTxt, C, by + 34);
-    }
   }
   // 右上角退出按钮（M 键）
   drawButton(R - 156, T, 100, 34, t('退出') + ' [M]', '#a33a3a');
@@ -6746,6 +6761,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.29', text: ['峡谷 Boss 重做：踩按钮冻臂、机械臂不再伤人、发射导弹（蓝眼预警）、每 30 秒在玩家附近召唤按钮；宇宙 Boss 恢复原样；追逐战红眼 2 秒/黄眼 1 秒、2 分钟倒计时', 'Canyon boss rework: freeze arms via buttons, arms no longer hurt, fires missiles (blue-eye warning), summons a button near you every 30s; space boss restored; chase red-eye 2s/yellow-eye 1s + 2-min countdown', 'Boss du canyon refait : geler les bras, bras inoffensifs, missiles (yeux bleus), bouton invoqué toutes les 30 s ; boss spatial restauré ; poursuite yeux rouges 2 s/jaunes 1 s + compte à rebours 2 min', '峡谷ボス再構築：ボタンでアーム凍結、アーム無害化、ミサイル発射（青目）、30秒毎にボタン召喚；宇宙ボス復元；追跡は赤目2秒/黄目1秒＋2分カウントダウン', 'Canyon-Boss überarbeitet: Arme per Knopf einfrieren, Arme harmlos, Raketen (blaue Augen), Knopf alle 30 s; Weltraumboss wiederhergestellt; Verfolgung rote Augen 2 s/gelbe 1 s + 2-Min-Countdown'] },
   { v: '2.28', text: ['峡谷 Boss 直接踩头；方块博士重做（红眼/黄眼、自动瞄准导弹、2 分钟限时）；颜色改为星星兑换；登录不再被兑换码拦截', 'Canyon boss is now stompable; Dr. Square rework (red/yellow eyes, homing missiles, 2-min limit); colors cost stars; login no longer blocked by code', 'Boss du canyon écrasable ; Dr. Carré refait (yeux rouge/jaune, missiles guidés, limite 2 min) ; couleurs contre des étoiles ; connexion plus bloquée', '峡谷ボスは直接踏める；博士リメイク（赤/黄目、追尾ミサイル、2分制限）；色は星で交換；ログインがコードでブロックされない', 'Canyon-Boss direkt stampfbar; Dr. Quadrat überarbeitet (rote/gelbe Augen, Lenkraketen, 2-Min-Limit); Farben kosten Sterne; Login nicht mehr blockiert'] },
   { v: '2.27', text: ['时装（帽子/衣服/眼镜）改为用星星兑换，更衣室右上角显示星星余额', 'Outfits (hats/clothes/glasses) now cost stars; star balance shown top-right', 'Tenues (chapeaux/vêtements/lunettes) contre des étoiles ; solde en haut à droite', '衣装（帽子/服/眼鏡）は星で交換；右上に星残高を表示', 'Outfits (Hüte/Kleidung/Brillen) kosten Sterne; Sternstand oben rechts'] },
   { v: '2.26', text: ['机械蜘蛛（洞穴）、钢铁压路机（森林）头顶踩踏判定更宽松，更容易踩头击杀', 'Spider (cave) & Crusher (forest) head-stomp hitbox is more generous', 'Araignée & Rouleau : zone de piétinement plus généreuse', '蜘蛛・圧路機の踏み判定がより寛大に', 'Spinne & Walze: Sprung-Trefferzone großzügiger'] },
@@ -8602,9 +8618,9 @@ function tipText(i) {
   if (pos === 14) {
     const tip = {
       forest: 'Boss：钢铁压路机！直接踩头击杀，小心它召唤的小怪！',
-      canyon: 'Boss：熔岩机械臂！直接踩头攻击核心，小心机械臂！',
+      canyon: 'Boss：熔岩机械臂！踩按钮冻住机械臂，再跳上核心攻击！',
       mine: 'Boss：机械蜘蛛！直接踩头击杀，小心它召唤的小蜘蛛！',
-      space: '最终Boss：方块博士！黄眼时踩它，红眼时躲开导弹！',
+      space: '最终Boss：方块博士！躲开导弹，等核心暴露时踩它！',
     }[ch.key];
     if (tip) return t(tip);
     return t('Boss 战！{0}魔王横冲直撞，黄眼时踩它头顶 5 次即可获胜。', t(ch.label));
