@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.25';  // 游戏版本号
+const GAME_VERSION = '2.26';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -4848,8 +4848,8 @@ function update(dt) {
     const rr = ball.r + Math.min(e.hw, e.hh);
     if (dx * dx + dy * dy < rr * rr) {
       // 踩顶判定：球底高于敌人上半身即视为踩踏，与下落速度无关（站在头顶也不会被咬）
-      // 方块博士头顶判定放大 ~1.2 倍：踩顶线从「中心上方 8px」下调到「中心」，可踩区域 42→50
-      const headOff = e.type === 'boss' ? (e.bossKind === 'square' ? 0 : 8) : 2;
+      // 方块博士/机械蜘蛛(洞穴)/钢铁压路机(森林) 头顶判定更宽松：踩顶线从「中心上方 8px」下调到「中心」，更容易踩头
+      const headOff = e.type === 'boss' ? ((e.bossKind === 'square' || e.bossKind === 'spider' || e.bossKind === 'crusher') ? 0 : 8) : 2;
       const onTop = ball.y + ball.r < e.y - headOff;
       if (e.type === 'boss') {
         bossTouchPlayer(e, dx, dy, onTop);
@@ -6655,6 +6655,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.26', text: '机械蜘蛛（洞穴）、钢铁压路机（森林）头顶踩踏判定更宽松，更容易踩头击杀' },
   { v: '2.25', text: '新增简单/普通/困难三档难度：命数 5/4/3、小怪伤害 0.5/1/1.5、瞄准简单/普通/困难' },
   { v: '2.24', text: '宇宙终章：全自动瞄准（飞弹始终追踪博士），不再需要手动瞄准' },
   { v: '2.23', text: '宇宙终章：博士跑慢一点 + 可跳上头顶踩它（也算命中）' },
