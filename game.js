@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.30';  // 游戏版本号
+const GAME_VERSION = '2.31';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -543,7 +543,7 @@ let lava = [];             // 熔岩 {x,y,w,h}（接触=受伤，机械臂 Boss 
 let conveyorBoost = 1;     // 压路机 Boss 传送带加速系数（随时间递增）
 let chase = null;          // 方块博士阶段三追逐状态 {on,x,speed,t,doctorX,endX}
 let beams = [];            // 方块博士激光束（已删除激光攻击，字段保留避免报错）
-let missiles = [];         // 玩家飞弹（追逐阶段发射，最多 3 发）
+let missiles = [];         // 玩家飞弹（追逐阶段发射，最多 5 发）
 let endingGood = true;     // 结局好坏：true=打肿博士（光明重现），false=博士逃走（黑暗降临）
 
 /* ============================ 地形编辑器 ============================ */
@@ -4507,12 +4507,12 @@ function drawLava(lv, t) {
 }
 
 /* —— 方块博士追逐序列 —— */
-// 宇宙终章：博士逃跑，玩家自由移动追逐（不锁摄像机），可发射 3 枚飞弹；无论追不追上都是成功结局
+// 宇宙终章：博士逃跑，玩家自由移动追逐（不锁摄像机），可发射 5 枚飞弹；无论追不追上都是成功结局
 function startChase() {
   const obs = [];
   for (let i = 0; i < 6; i++) obs.push({ x: ball.x + 700 + i * 750, y: ball.y + 22, r: 22, spin: i * 1.3 });
   const aim = aimCfg();
-  chase = { on: true, t: 0, eyeT: 0, vuln: false, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 3, hits: 0, swell: 0, duration: 120, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0, turn: aim.turn, hitHalf: aim.hitHalf };
+  chase = { on: true, t: 0, eyeT: 0, vuln: false, doctorX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, doctorY: ball.y, doctorVX: 280, missilesLeft: 5, hits: 0, swell: 0, duration: 120, aimX: ball.x + (VIEW_W / WORLD_ZOOM) * 0.55, aimY: ball.y, aiming: false, obstacles: obs, ending: false, endT: 0, spin: 0, knockVX: 0, knockVY: 0, turn: aim.turn, hitHalf: aim.hitHalf };
   enemies = enemies.filter(e => !(e.type === 'boss' && e.bossKind === 'square'));
   missiles = [];
   conveyorBoost = 1;   // 追逐时恢复传送带正常速度，方便自由移动
@@ -6768,6 +6768,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.31', text: ['宇宙终章：飞弹从 3 发增加到 5 发（黄眼窗口更从容）', 'Finale: missiles increased from 3 to 5 (more room for the yellow-eye windows)', 'Finale : missiles passées de 3 à 5 (plus de marge pour les fenêtres œil jaune)', '最終章：ミサイルを3発から5発に増加（黄目窓に余裕）', 'Finale: Raketen von 3 auf 5 erhöht (mehr Spielraum für Gelb-Auge-Fenster)'] },
   { v: '2.30', text: ['剧情优化（魔王战提示黄眼、宇宙决战补充追逐说明）；滚动拖尾改为跟随当前皮肤颜色', 'Story polish (yellow-eye hint for the demon boss, chase note for the final battle); the rolling trail now matches the current skin color', 'Scénario affiné (indice œil jaune, note de poursuite) ; traînée aux couleurs de la peau', 'ストーリー改善（魔王戦の黄目ヒント、最終決戦の追跡説明）；転がる軌跡をスキン色に', 'Story verbessert (Gelb-Auge-Hinweis, Verfolgungsnotiz); Spur folgt jetzt der Hautfarbe'] },
   { v: '2.29', text: ['峡谷 Boss 重做：踩按钮冻臂、机械臂不再伤人、发射导弹（蓝眼预警）、每 30 秒在玩家附近召唤按钮；宇宙 Boss 恢复原样；追逐战红眼 2 秒/黄眼 1 秒、2 分钟倒计时', 'Canyon boss rework: freeze arms via buttons, arms no longer hurt, fires missiles (blue-eye warning), summons a button near you every 30s; space boss restored; chase red-eye 2s/yellow-eye 1s + 2-min countdown', 'Boss du canyon refait : geler les bras, bras inoffensifs, missiles (yeux bleus), bouton invoqué toutes les 30 s ; boss spatial restauré ; poursuite yeux rouges 2 s/jaunes 1 s + compte à rebours 2 min', '峡谷ボス再構築：ボタンでアーム凍結、アーム無害化、ミサイル発射（青目）、30秒毎にボタン召喚；宇宙ボス復元；追跡は赤目2秒/黄目1秒＋2分カウントダウン', 'Canyon-Boss überarbeitet: Arme per Knopf einfrieren, Arme harmlos, Raketen (blaue Augen), Knopf alle 30 s; Weltraumboss wiederhergestellt; Verfolgung rote Augen 2 s/gelbe 1 s + 2-Min-Countdown'] },
   { v: '2.28', text: ['峡谷 Boss 直接踩头；方块博士重做（红眼/黄眼、自动瞄准导弹、2 分钟限时）；颜色改为星星兑换；登录不再被兑换码拦截', 'Canyon boss is now stompable; Dr. Square rework (red/yellow eyes, homing missiles, 2-min limit); colors cost stars; login no longer blocked by code', 'Boss du canyon écrasable ; Dr. Carré refait (yeux rouge/jaune, missiles guidés, limite 2 min) ; couleurs contre des étoiles ; connexion plus bloquée', '峡谷ボスは直接踏める；博士リメイク（赤/黄目、追尾ミサイル、2分制限）；色は星で交換；ログインがコードでブロックされない', 'Canyon-Boss direkt stampfbar; Dr. Quadrat überarbeitet (rote/gelbe Augen, Lenkraketen, 2-Min-Limit); Farben kosten Sterne; Login nicht mehr blockiert'] },
