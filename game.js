@@ -15,7 +15,7 @@ const HUD_TOP = 30;          // 顶部 HUD 安全边距：所有顶部 HUD 元�
 const WORLD_ZOOM = 1.5;      // 关卡世界缩放：1.5 倍放大（地形/球/敌人整体放大）
 const WARDROBE_ZOOM = 1.5;   // 更衣室界面缩放：1.5 倍放大并居中（屏幕放不下时自动缩到能完整显示）
 const TUTORIAL_ZOOM = 1.5;   // 教程/剧情界面缩放：1.5 倍放大
-const GAME_VERSION = '2.29';  // 游戏版本号
+const GAME_VERSION = '2.30';  // 游戏版本号
 // —— 画质（渲染倍率）：低/中/高/超高，倍数越高越清晰、越吃性能 ——
 const QUALITY_SCALE = { low: 1, medium: 2, high: 3, ultra: 4 };
 let quality = 'high';
@@ -398,6 +398,11 @@ function drawGlow(r, sk) {
   ctx.beginPath(); ctx.arc(0, 0, r + 1, 0, 7); ctx.fill();
   ctx.restore();
 }
+// 十六进制色 + 透明度 → rgba() 字符串（用于拖尾等按当前皮肤颜色着色）
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
 // 球体本体：普通渐变 / 空心环 / 纯色 / 像素风 / 积木块（绘制后留下描边轮廓路径，供调用方 stroke 边缘）
 function drawBallBody(sk, r) {
   if (sk.hollow) {
@@ -673,7 +678,7 @@ const STORIES = {
   ] },
   14: { title: '草原终章 · 魔王之战', lines: [
     '方块魔王现身了！',
-    '踩在它头上五次，',
+    '趁它黄眼时踩头五次，',
     '把它彻底击败，夺回太阳！',
   ] },
   15: { title: '第二章 · 森林篇', lines: [
@@ -711,6 +716,7 @@ const STORIES = {
   74: { title: '最终决战 · 方块博士', lines: [
     '方块博士驾驶巨型机器人现身了！',
     '躲开导弹，等核心暴露时踩它！',
+    '击败后博士会带着太阳逃窜，趁黄眼打肿它，限时 2 分钟！',
   ] },
 };
 const ENDING = { title: '结局 · 光明重现', lines: [
@@ -945,7 +951,7 @@ const I18N_ROWS = [
   ['魔王的宫殿就在最高的山丘之后……', 'and the Demon Lord\'s palace lies beyond the highest hill…', 'et le palais du Seigneur Démon se dresse derrière la plus haute colline…', '魔王の宮殿は最も高い丘の向こうにある……', 'und der Palast des Dämonenlords liegt hinter dem höchsten Hügel…'],
   ['草原终章 · 魔王之战', 'Grassland Finale · Demon Lord Battle', 'Finale de la prairie · Combat du Seigneur Démon', '草原最終章 · 魔王戦', 'Grasland-Finale · Kampf gegen den Dämonenlord'],
   ['方块魔王现身了！', 'The Square Demon Lord appears!', 'Le Seigneur Démon Carré apparaît !', 'ブロック魔王が現れた！', 'Der Würfel-Dämonenlord erscheint!'],
-  ['踩在它头上五次，', 'Stomp on its head five times,', 'Écrasez-lui la tête cinq fois,', '頭を5回踏みつけ、', 'Spring ihm fünfmal auf den Kopf,'],
+  ['趁它黄眼时踩头五次，', 'Stomp its head five times while its eye is yellow,', 'Écrasez-lui la tête cinq fois quand son œil est jaune,', '目が黄色のときに頭を5回踏み、', 'Spring ihm fünfmal auf den Kopf, wenn sein Auge gelb ist,'],
   ['把它彻底击败，夺回太阳！', 'defeat it completely, and reclaim the sun!', 'battez-le complètement et reprenez le soleil !', '完全に倒して、太陽を取り戻せ！', 'besiege es vollständig und hole die Sonne zurück!'],
   ['第二章 · 森林篇', 'Chapter 2 · The Forest', 'Chapitre 2 · La forêt', '第二章 · 森の編', 'Kapitel 2 · Der Wald'],
   ['草原的尽头，是一片幽深的森林。', 'Beyond the grassland lies a deep, dark forest.', 'Au-delà de la prairie s\'étend une forêt profonde et sombre.', '草原の果てには、深く暗い森が広がる。', 'Jenseits des Graslands liegt ein tiefer, dunkler Wald.'],
@@ -1094,6 +1100,7 @@ const I18N_ROWS = [
   ['最终决战 · 方块博士', 'Final Battle · Dr. Square', 'Bataille finale · Dr. Carré', '最終決戦 · ドクター・スクエア', 'Letzte Schlacht · Dr. Quadrat'],
   ['方块博士驾驶巨型机器人现身了！', 'Dr. Square appears in a giant robot!', 'Dr. Carré apparaît dans un robot géant !', 'ドクター・スクエアが巨大ロボットで現れた！', 'Dr. Quadrat erscheint in einem Riesenroboter!'],
   ['躲开导弹，等核心暴露时踩它！', 'Dodge the missiles and stomp the core when exposed!', 'Esquivez les missiles et écrasez le noyau exposé !', 'ミサイルを避け、コア露出時に踏め！', 'Weiche Raketen aus und spring auf den Kern, wenn er freiliegt!'],
+  ['击败后博士会带着太阳逃窜，趁黄眼打肿它，限时 2 分钟！', 'After defeat, the doctor flees with the sun — strike while its eye is yellow, within 2 minutes!', 'Vaincu, le docteur fuit avec le soleil — frappez quand son œil est jaune, en 2 minutes !', '倒すと博士は太陽を持って逃走する、黄色の目のうちに2分以内で叩け！', 'Besiegt flieht der Doktor mit der Sonne — schlag bei gelbem Auge zu, in 2 Minuten!'],
   // HUD
   ['无敌', 'Invincible', 'Invincible', '無敵', 'Unbesiegbar'],
   ['飞行', 'Flying', 'Vol', '飛行', 'Fliegen'],
@@ -6761,6 +6768,7 @@ function drawWardrobe() {
 /* ============================ 制作组名单 ============================ */
 // 更新日志：每次改动都追加一条（新版本在最上），随制作组页一起展示、可滚动
 const CHANGELOG = [
+  { v: '2.30', text: ['剧情优化（魔王战提示黄眼、宇宙决战补充追逐说明）；滚动拖尾改为跟随当前皮肤颜色', 'Story polish (yellow-eye hint for the demon boss, chase note for the final battle); the rolling trail now matches the current skin color', 'Scénario affiné (indice œil jaune, note de poursuite) ; traînée aux couleurs de la peau', 'ストーリー改善（魔王戦の黄目ヒント、最終決戦の追跡説明）；転がる軌跡をスキン色に', 'Story verbessert (Gelb-Auge-Hinweis, Verfolgungsnotiz); Spur folgt jetzt der Hautfarbe'] },
   { v: '2.29', text: ['峡谷 Boss 重做：踩按钮冻臂、机械臂不再伤人、发射导弹（蓝眼预警）、每 30 秒在玩家附近召唤按钮；宇宙 Boss 恢复原样；追逐战红眼 2 秒/黄眼 1 秒、2 分钟倒计时', 'Canyon boss rework: freeze arms via buttons, arms no longer hurt, fires missiles (blue-eye warning), summons a button near you every 30s; space boss restored; chase red-eye 2s/yellow-eye 1s + 2-min countdown', 'Boss du canyon refait : geler les bras, bras inoffensifs, missiles (yeux bleus), bouton invoqué toutes les 30 s ; boss spatial restauré ; poursuite yeux rouges 2 s/jaunes 1 s + compte à rebours 2 min', '峡谷ボス再構築：ボタンでアーム凍結、アーム無害化、ミサイル発射（青目）、30秒毎にボタン召喚；宇宙ボス復元；追跡は赤目2秒/黄目1秒＋2分カウントダウン', 'Canyon-Boss überarbeitet: Arme per Knopf einfrieren, Arme harmlos, Raketen (blaue Augen), Knopf alle 30 s; Weltraumboss wiederhergestellt; Verfolgung rote Augen 2 s/gelbe 1 s + 2-Min-Countdown'] },
   { v: '2.28', text: ['峡谷 Boss 直接踩头；方块博士重做（红眼/黄眼、自动瞄准导弹、2 分钟限时）；颜色改为星星兑换；登录不再被兑换码拦截', 'Canyon boss is now stompable; Dr. Square rework (red/yellow eyes, homing missiles, 2-min limit); colors cost stars; login no longer blocked by code', 'Boss du canyon écrasable ; Dr. Carré refait (yeux rouge/jaune, missiles guidés, limite 2 min) ; couleurs contre des étoiles ; connexion plus bloquée', '峡谷ボスは直接踏める；博士リメイク（赤/黄目、追尾ミサイル、2分制限）；色は星で交換；ログインがコードでブロックされない', 'Canyon-Boss direkt stampfbar; Dr. Quadrat überarbeitet (rote/gelbe Augen, Lenkraketen, 2-Min-Limit); Farben kosten Sterne; Login nicht mehr blockiert'] },
   { v: '2.27', text: ['时装（帽子/衣服/眼镜）改为用星星兑换，更衣室右上角显示星星余额', 'Outfits (hats/clothes/glasses) now cost stars; star balance shown top-right', 'Tenues (chapeaux/vêtements/lunettes) contre des étoiles ; solde en haut à droite', '衣装（帽子/服/眼鏡）は星で交換；右上に星残高を表示', 'Outfits (Hüte/Kleidung/Brillen) kosten Sterne; Sternstand oben rechts'] },
@@ -7176,8 +7184,8 @@ function drawWorld() {
   for (const t of trail) {
     const a = (t.life / t.max) * 0.32;
     const tg = ctx.createRadialGradient(t.x, t.y, 3, t.x, t.y, t.r);
-    tg.addColorStop(0, `rgba(255,70,50,${a})`);
-    tg.addColorStop(1, 'rgba(255,70,50,0)');
+    tg.addColorStop(0, hexA(SKINS[skinIndex].c1, a));
+    tg.addColorStop(1, hexA(SKINS[skinIndex].c1, 0));
     ctx.fillStyle = tg;
     ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, 7); ctx.fill();
   }
